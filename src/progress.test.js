@@ -68,8 +68,21 @@ describe("backups", () => {
     const { state, report } = applyBackup(emptyState(), file);
     expect(report).toBe("1 added");
     expect(state.projects[0].progress.copies.body[0].done.b1).toBe("t");
-    expect(applyBackup(s, file).report).toBe("1 updated");
     expect(applyBackup(s, file, "replace").state.projects).toHaveLength(1);
+  });
+  it("merging an older backup never undoes newer progress", () => {
+    const p = make();
+    tick(p, "body", 0, "b1");
+    const old = JSON.parse(JSON.stringify(exportObject({ projects: [p] })));
+    old.projects[0].updatedAt = "2020-01-01T00:00:00.000Z";
+    tick(p, "body", 0, "b2");
+    const s = { ...emptyState(), projects: [p] };
+    const r = applyBackup(s, old);
+    expect(r.report).toMatch(/kept as on this device/);
+    expect(Object.keys(r.state.projects[0].progress.copies.body[0].done)).toEqual(["b1", "b2"]);
+    const newer = JSON.parse(JSON.stringify(exportObject(s)));
+    newer.projects[0].updatedAt = "2999-01-01T00:00:00.000Z";
+    expect(applyBackup(s, newer).report).toBe("1 updated");
   });
   it("skips broken projects and refuses files without any", () => {
     expect(normalizeProject({ id: "x" })).toBeNull();
@@ -93,5 +106,48 @@ describe("stitch library", () => {
     expect(e.lib.id).toBe("invdec");
     expect(explain("MR", pattern).lib.id).toBe("mr");
     expect(explain("sts", pattern).term).toBe("stitches");
+  });
+});
+
+describe("robustness (QA findings)", () => {
+  it("a part or step called 'constructor' neither crashes nor starts ticked", () => {
+    const pat = normalizePattern({ parts: [{ name: "Constructor", steps: [{ id: "constructor", text: "sc" }, { id: "b", text: "sc" }] }] }).pattern;
+    const p = newProject(pat);
+    expect(projectProgress(p).done).toBe(0);
+    tick(p, pat.parts[0].id, 0, pat.parts[0].steps[1].id);
+    const again = normalizeProject(JSON.parse(JSON.stringify(p)));
+    expect(projectProgress(again).done).toBe(1);
+  });
+  it("broken stored progress doesn't throw or lose the project", () => {
+    const p = make();
+    p.progress = { copies: { body: [null, "x"], ear: "nope" }, last: 5 };
+    const again = normalizeProject(JSON.parse(JSON.stringify(p)));
+    expect(again).not.toBeNull();
+    expect(projectProgress(again).done).toBe(0);
+  });
+  it("re-import keeps the previous version and reports what is kept", async () => {
+    const { keptAfterReimport } = await import("./progress");
+    const p = make();
+    tick(p, "body", 0, "b1");
+    tick(p, "body", 0, "b2");
+    const changed = structuredClone(p.pattern);
+    changed.parts[0].steps[1].id = "b2-new";
+    expect(keptAfterReimport(p.progress, normalizePattern(changed).pattern)).toEqual({ before: 2, after: 1 });
+  });
+  it("UK full names and abbreviations resolve in the pattern's terms", () => {
+    expect(findStitch("double crochet", "US").id).toBe("dc");
+    expect(findStitch("double crochet", "UK").id).toBe("sc");
+    expect(findStitch("treble", "UK").id).toBe("dc");
+    expect(explain("mc", null).lib).toBeNull();
+  });
+});
+
+describe("resume order (browser QA)", () => {
+  it("prefers a half-done copy over an untouched part", () => {
+    const p = make();
+    tick(p, "ear", 1, "e1");
+    for (const u of partProgress(p.pattern.parts[2], copyState(p, "making-up", 0)).units) tick(p, "making-up", 0, u.key);
+    const r = resumePoint(p);
+    expect([r.part.id, r.copy]).toEqual(["ear", 1]);
   });
 });

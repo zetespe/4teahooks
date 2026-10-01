@@ -65,7 +65,7 @@ export const STITCHES = [
     how: ["Chains made at the start of a row to reach the height of the stitches: usually 1 for sc, 2 for hdc, 3 for dc (US terms).", "The pattern says whether the turning chain counts as a stitch."] },
 
   // ---- starts and foundations ----
-  { id: "mr", name: "magic ring", us: ["mr", "magic ring", "magic loop", "mc", "magic circle", "adjustable ring"], ukAbbr: ["mr", "magic ring", "magic loop", "mc", "magic circle"], group: "Starting",
+  { id: "mr", name: "magic ring", us: ["mr", "magic ring", "magic loop", "magic circle", "adjustable ring"], ukAbbr: ["mr", "magic ring", "magic loop", "magic circle"], group: "Starting",
     how: ["Wrap the yarn around two fingers to make a loop, tail in front.", "Insert the hook under the loop, catch the working yarn and pull up a loop.", "Chain 1 to secure (doesn't count as a stitch).", "Work the first round's stitches into the ring, over both strands.", "Pull the tail to close the ring tight."],
     tip: "Closes without a hole in the middle, which is why amigurumi starts with it." },
   { id: "fsc", name: "foundation single crochet", uk: "foundation double crochet", us: ["fsc"], ukAbbr: ["fdc"], group: "Starting",
@@ -111,7 +111,7 @@ export const STITCHES = [
     how: ["Forward pass: insert the hook from front to back between the front and back vertical bars, yarn over, pull up a loop. Repeat across.", "Return pass as usual."] },
 
   // ---- techniques and finishing ----
-  { id: "colour", name: "colour change", us: ["cc", "change color", "change colour"], ukAbbr: ["cc", "change colour"], group: "Techniques",
+  { id: "colour", name: "colour change", us: ["change color", "change colour"], ukAbbr: ["change colour"], group: "Techniques",
     how: ["Work the last stitch in the old colour until the final yarn over.", "Yarn over with the new colour and pull through to finish the stitch.", "Carry on with the new colour; tie or weave the ends later."] },
   { id: "fo", name: "fasten off", uk: "fasten off", us: ["fo", "fasten off"], ukAbbr: ["fo", "fasten off"], group: "Techniques",
     how: ["Cut the yarn, leaving a tail (long if you'll sew with it).", "Yarn over and pull the tail all the way through the loop on the hook. Tighten."] },
@@ -144,7 +144,7 @@ export const STITCHES = [
 export const TERMS = {
   st: "stitch", sts: "stitches", rnd: "round", rnds: "rounds", rep: "repeat", yo: "yarn over (UK: yrh, yarn round hook)", yoh: "yarn over hook",
   tog: "together", rs: "right side", ws: "wrong side", beg: "beginning", prev: "previous", rem: "remaining", foll: "following",
-  approx: "approximately", alt: "alternate", cont: "continue", lp: "loop", lps: "loops", mc: "main colour (or magic circle)", cc: "contrast colour",
+  approx: "approximately", alt: "alternate", cont: "continue", lp: "loop", lps: "loops", mc: "main colour (in some patterns: magic circle, see magic ring)", cc: "contrast colour",
   sp: "space", "sp(s)": "space(s)", "*": "repeat the instructions after the asterisk as the pattern says",
 };
 
@@ -159,8 +159,11 @@ export function findStitch(code, terminology = "US") {
   const primary = STITCHES.find((s) => (uk ? s.ukAbbr : s.us).some((a) => norm(a) === c));
   if (primary) return primary;
   // Not a known abbreviation in this system: try the other one, then names.
+  // Full names are just as ambiguous ("double crochet"), so they are read in
+  // the pattern's terms first too.
   return STITCHES.find((s) => (uk ? s.us : s.ukAbbr).some((a) => norm(a) === c))
-    || STITCHES.find((s) => norm(s.name) === c || norm(s.uk) === c)
+    || STITCHES.find((s) => norm(uk ? s.uk || s.name : s.name) === c)
+    || STITCHES.find((s) => norm(uk ? s.name : s.uk) === c)
     || null;
 }
 

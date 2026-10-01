@@ -14,7 +14,7 @@ export default defineConfig({
         globIgnores: ['about/**'],
         // The about page is a real page, not an app route: the service
         // worker must not answer for it with the app shell.
-        navigateFallbackDenylist: [/\/about\//],
+        navigateFallbackDenylist: [/\/about(\/|$)/],
       },
       manifest: {
         name: '4tea Hooks',
@@ -26,8 +26,9 @@ export default defineConfig({
         theme_color: '#f7f1e8',
         start_url: '/4teahooks/',
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),

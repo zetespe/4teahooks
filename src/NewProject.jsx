@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore, patch, newProject } from "./store";
 import { normalizePattern, extractJSON, unitsOfPart } from "./pattern";
-import { pruneProgress } from "./progress";
+import { pruneProgress, keptAfterReimport } from "./progress";
 import { aiPrompt } from "./prompt";
 import { copyText, toast, go, Icon } from "./ui";
 
@@ -25,6 +25,8 @@ export default function NewProject({ replaceId = null }) {
       const r = normalizePattern(extractJSON(text));
       if (!r.pattern.sourceUrl && /^https?:\/\//i.test(link.trim())) r.pattern.sourceUrl = link.trim();
       setResult(r);
+      // The preview opens below the fold on a phone: bring it into view.
+      setTimeout(() => document.getElementById("preview")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     } catch (e) { setError(e.message); }
   };
 
@@ -40,17 +42,18 @@ export default function NewProject({ replaceId = null }) {
     if (existing) {
       patch((s) => {
         const p = s.projects.find((x) => x.id === existing.id);
+        p.previous = { pattern: p.pattern, progress: p.progress, at: new Date().toISOString() };
         p.pattern = result.pattern;
         p.progress = pruneProgress(p.progress, result.pattern);
         p.updatedAt = new Date().toISOString();
       });
-      toast("Pattern updated; your ticks on matching rows were kept", 3500);
-      go("p/" + existing.id);
+      toast("Pattern updated. Changed your mind? ⋯ → Undo the last conversion", 4000);
+      go("p/" + existing.id, { replace: true });
       return;
     }
     const p = newProject(result.pattern);
     patch((s) => { s.projects.push(p); s.settings.changesSinceBackup = (s.settings.changesSinceBackup || 0) + 1; });
-    go("p/" + p.id);
+    go("p/" + p.id, { replace: true });
   };
 
   return (
@@ -82,21 +85,21 @@ export default function NewProject({ replaceId = null }) {
         <textarea className="paste" rows={6} placeholder="Paste the chatbot's whole answer here" value={answer}
           onChange={(e) => { setAnswer(e.target.value); setResult(null); setError(""); }} />
         <div className="row-gap">
-          <button type="button" className="btn" onClick={pasteFromClipboard}>Paste from clipboard</button>
+          <button type="button" className="btn" onClick={pasteFromClipboard}>Paste</button>
           <button type="button" className="btn" onClick={() => check()}>Check</button>
         </div>
         {error && <p className="error" role="alert">{error}</p>}
       </section>
 
-      {result && <Preview result={result} onSave={save} replacing={!!existing} />}
+      {result && <Preview result={result} onSave={save} replacing={!!existing} kept={existing ? keptAfterReimport(existing.progress, result.pattern) : null} />}
     </>
   );
 }
 
-function Preview({ result, onSave, replacing }) {
+function Preview({ result, onSave, replacing, kept }) {
   const { pattern, warnings } = result;
   return (
-    <section className="card">
+    <section className="card" id="preview">
       <h2><span className="num">3</span> Check and save</h2>
       <h3 className="preview-title">{pattern.title}</h3>
       <p className="meta">
@@ -110,6 +113,13 @@ function Preview({ result, onSave, replacing }) {
       </ul>
       {warnings.length > 0 && (
         <ul className="warnings">{warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
+      )}
+      {kept && kept.before > 0 && (
+        <p className={kept.after < kept.before ? "warnings" : "hint"}>
+          {kept.after === kept.before
+            ? `All ${kept.before} of your ticks and notes stay in place.`
+            : `${kept.after} of your ${kept.before} ticks and notes stay; ${kept.before - kept.after} are on rows that changed and will be dropped. You can undo this from the project menu.`}
+        </p>
       )}
       <p className="hint">Compare a few rows with the original pattern. If something's off, ask the chatbot to fix it and paste again.</p>
       <button type="button" className="btn primary wide" onClick={onSave}>{replacing ? "Replace pattern" : "Save project"}</button>

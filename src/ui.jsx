@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function go(path) { window.location.hash = "#/" + path.replace(/^\//, ""); }
+// replace: true swaps the current history entry, so Back doesn't lead to a
+// form that was already submitted or a project that was deleted.
+export function go(path, { replace = false } = {}) {
+  const hash = "#/" + path.replace(/^\//, "");
+  if (replace) window.location.replace(hash); else window.location.hash = hash;
+}
 
 // ---- toast (module-level so any helper can call it) ----
 let toastListener = null;
@@ -40,7 +45,7 @@ export function Bar({ value, total, label }) {
 
 // "today", "yesterday", "3 days ago", "12 Mar"
 export function ago(iso) {
-  if (!iso) return "not started";
+  if (!iso) return "not yet";
   const d = new Date(iso), now = new Date();
   const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diff = Math.round((day(now) - day(d)) / 86400000);
@@ -64,14 +69,28 @@ export function Check({ done, onClick, label, big }) {
 
 // A bottom sheet / dialog, closed by the backdrop or Escape.
 export function Sheet({ title, onClose, children }) {
+  const ref = useRef(null);
+  // Focus moves into the sheet, stays there while it's open (Tab wraps), and
+  // returns to whatever opened it.
   useEffect(() => {
-    const k = (e) => { if (e.key === "Escape") onClose(); };
+    const opener = document.activeElement;
+    const focusables = () => [...ref.current.querySelectorAll("button, a[href], input, textarea, select")].filter((el) => !el.disabled);
+    (focusables()[1] || focusables()[0])?.focus();
+    const k = (e) => {
+      if (e.key === "Escape") { onClose(); return; }
+      if (e.key !== "Tab") return;
+      const f = focusables();
+      if (!f.length) return;
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    };
     document.addEventListener("keydown", k);
-    return () => document.removeEventListener("keydown", k);
+    return () => { document.removeEventListener("keydown", k); if (opener && opener.focus) opener.focus(); };
   }, [onClose]);
   return (
     <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div className="sheet" ref={ref} role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <div className="sheet-head">
           <h2>{title}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">✕</button>

@@ -38,7 +38,8 @@ function ProjectCard({ p }) {
   let where = "All done";
   if (r) {
     const copy = r.part.make > 1 ? ` ${r.copy + 1} of ${r.part.make}` : "";
-    const unit = r.unit.kind === "action" ? (r.unit.step.text.length > 40 ? r.unit.step.text.slice(0, 40) + "…" : r.unit.step.text) : r.unit.label + (r.unit.rep ? ` (${r.unit.rep.i} of ${r.unit.rep.of})` : "");
+    const t = r.unit.step.text || r.unit.step.label || "";
+    const unit = r.unit.kind === "action" ? (t.length > 40 ? t.slice(0, 40) + "…" : t) : r.unit.label + (r.unit.rep ? ` (${r.unit.rep.i} of ${r.unit.rep.of})` : "");
     where = `${r.part.name}${copy} · ${unit}`;
   }
   return (
@@ -51,7 +52,7 @@ function ProjectCard({ p }) {
         <p className="where">{where}</p>
         {r && r.note && <p className="stop-note">“{r.note}”</p>}
         <Bar value={prog.done} total={prog.total} label={`${p.pattern.title} progress`} />
-        <p className="meta">{prog.pct}% · {p.pattern.size && p.pattern.size !== "One size" ? `size ${p.pattern.size} · ` : ""}last worked {ago(p.lastWorkedAt)}</p>
+        <p className="meta">{prog.pct}% · {p.pattern.size && p.pattern.size !== "One size" ? `size ${p.pattern.size} · ` : ""}{p.lastWorkedAt ? `last worked ${ago(p.lastWorkedAt)}` : "not started yet"}</p>
       </a>
     </li>
   );

@@ -107,3 +107,59 @@ describe("aiPrompt", () => {
     expect(aiPrompt({})).toMatch(/ask me which size/);
   });
 });
+
+describe("robustness (QA findings)", () => {
+  it("reads numbers and ranges written as text", () => {
+    const { pattern } = normalizePattern({ parts: [{ name: "A", make: "2 (one per side)", steps: [
+      { kind: "round", number: "Rnds 12–18", text: "sc" },
+      { kind: "round", from: "12-18", text: "sc" },
+      { kind: "round", number: "Rnd 5 (12 sts)", text: "sc" },
+      { kind: "repeat", times: "3 times", steps: ["sc"] },
+    ] }] });
+    const [a, b, c, d] = pattern.parts[0].steps;
+    expect([a.from, a.to, b.from, b.to, c.number, d.times]).toEqual([12, 18, 12, 18, 5, 3]);
+    expect(pattern.parts[0].make).toBe(2);
+  });
+  it("an action with only a label gets that label as its text", () => {
+    const { pattern } = normalizePattern({ parts: [{ name: "A", steps: [{ kind: "action", action: "stuff", name: "Stuff the head" }] }] });
+    expect(pattern.parts[0].steps[0].text).toBe("Stuff the head");
+  });
+  it("keeps an open-ended repeat inside a counted one as a counter per repetition", () => {
+    const { pattern, warnings } = normalizePattern({ parts: [{ name: "A", steps: [
+      { kind: "repeat", label: "Stripe", times: 2, steps: ["sc row", { kind: "repeat", until: "5 cm", steps: ["dc row"] }] },
+    ] }] });
+    expect(warnings.filter((w) => !/US or UK/.test(w))).toEqual([]);
+    expect(unitsOfPart(pattern.parts[0]).map((u) => u.kind)).toEqual(["line", "counter", "line", "counter"]);
+  });
+  it("caps huge nested repeats so the app stays fast", () => {
+    const { pattern, warnings } = normalizePattern({ parts: [{ name: "Blanket", steps: [
+      { kind: "repeat", times: 500, steps: [{ kind: "repeat", times: 500, steps: [{ kind: "row", from: 1, to: 4, text: "sc" }] }] },
+    ] }] });
+    expect(unitsOfPart(pattern.parts[0]).length).toBeLessThanOrEqual(3000);
+    expect(warnings.some((w) => /counter instead/.test(w))).toBe(true);
+    expect(normalizePattern(structuredClone(pattern)).pattern).toEqual(pattern);
+  });
+  it("prefers the pattern over small objects in the chatbot's prose", () => {
+    const text = 'Use {"note": "US terms"} as you like. Here: {"title":"Real","parts":[{"name":"A","steps":["sc"]}]}';
+    expect(extractJSON(text).title).toBe("Real");
+  });
+});
+
+describe("chatbot quirks (browser QA)", () => {
+  it("'times' written as a condition becomes an open-ended repeat", () => {
+    const { pattern } = normalizePattern({ parts: [{ name: "Blanket", steps: [{ kind: "repeat", label: "Stripes", times: "until 120 cm", steps: ["sc row"] }] }] });
+    expect(pattern.parts[0].steps[0]).toMatchObject({ until: "120 cm" });
+    expect(pattern.parts[0].steps[0].times).toBeUndefined();
+  });
+  it("warns when a count had to be guessed from text, naming the part", () => {
+    const { pattern, warnings } = normalizePattern({ parts: [{ name: "Sleeve", make: "1 pair (2 pieces)", steps: [{ kind: "repeat", label: "Cuff", times: "10 (12, 14)", steps: ["sc row"] }, { kind: "row", number: 7 }] }] });
+    expect(pattern.parts[0].steps[0].times).toBe(10);
+    expect(warnings.some((w) => /Sleeve, Cuff: “10 \(12, 14\)” was read as 10/.test(w))).toBe(true);
+    expect(warnings.some((w) => /Sleeve: how many to make/.test(w))).toBe(true);
+    expect(warnings.some((w) => /Sleeve, Row 7: a row without instructions/.test(w))).toBe(true);
+  });
+  it("tolerates trailing commas and explains broken JSON", () => {
+    expect(extractJSON('```json\n{"title":"T","parts":[{"name":"A","steps":["sc",],},],}\n```').title).toBe("T");
+    expect(() => extractJSON('{"title":"T","parts":[{"name":"A"')).toThrow(/isn't valid JSON/);
+  });
+});

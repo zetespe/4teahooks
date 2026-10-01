@@ -38,15 +38,19 @@ export default function Project({ id }) {
 
   const toggle = (unit) => {
     const was = !!cs.done[unit.key];
-    patchProject(p.id, (d) => editCopy(d, part.id, copy, (c) => {
-      if (was) delete c.done[unit.key]; else c.done[unit.key] = new Date().toISOString();
-    }));
+    patchProject(p.id, (d) => {
+      editCopy(d, part.id, copy, (c) => {
+        if (was) delete c.done[unit.key]; else c.done[unit.key] = new Date().toISOString();
+      });
+      // Unticking something in a finished project means it isn't finished.
+      if (was && d.status === "finished") { d.status = "active"; delete d.finishedAt; }
+    });
     if (!was && pp.done + 1 === pp.total) toast(part.make > 1 ? `${part.name} ${copy + 1} of ${part.make} finished!` : `${part.name} finished!`, 3000);
   };
   const setNote = (unit, text) => patchProject(p.id, (d) => editCopy(d, part.id, copy, (c) => {
     if (text) c.notes[unit.key] = text; else delete c.notes[unit.key];
-  }));
-  const setCounter = (step, n) => patchProject(p.id, (d) => editCopy(d, part.id, copy, (c) => { c.counters[step.id] = Math.max(0, n); }));
+  }), { count: false });
+  const setCounter = (unit, n) => patchProject(p.id, (d) => editCopy(d, part.id, copy, (c) => { c.counters[unit.key] = Math.max(0, n); }));
 
   const jump = (target) => {
     setSel({ partId: target.part.id, copy: target.copy });
@@ -67,10 +71,11 @@ export default function Project({ id }) {
 
       <PartTabs p={p} part={part} copy={copy} onSelect={(partId, c) => setSel({ partId, copy: c })} />
 
+      <h2 className="part-title">{part.name}{part.make > 1 ? ` ${copy + 1} of ${part.make}` : ""} <small className="meta">{pp.done}/{pp.total}</small></h2>
       <section className="steps" aria-label={`${part.name} steps`}>
         {part.notes && part.notes.map((n, i) => <p key={i} className="step note">{n}</p>)}
         {part.steps.map((step) => (
-          <StepView key={step.id} step={step} cs={cs} nextKey={pp.next?.key} pattern={p.pattern}
+          <StepView key={`${part.id}/${copy}/${step.id}`} step={step} cs={cs} nextKey={pp.next?.key} pattern={p.pattern}
             onToggle={toggle} onNote={setNote} onCounter={setCounter} />
         ))}
       </section>
@@ -110,12 +115,12 @@ function ResumeCard({ p, r, total, onJump }) {
       </section>
     );
   }
-  const what = r.unit.kind === "action" ? r.unit.step.text : r.unit.label + (r.unit.rep ? ` (repeat ${r.unit.rep.i} of ${r.unit.rep.of})` : "");
+  const what = r.unit.kind === "action" ? r.unit.step.text || r.unit.step.label : r.unit.label + (r.unit.rep ? ` (repeat ${r.unit.rep.i} of ${r.unit.rep.of})` : "");
   return (
     <section className="card resume">
       <div className="row-between">
         <span className="eyebrow">Pick up here</span>
-        <span className="meta">last worked {ago(p.lastWorkedAt)}</span>
+        <span className="meta">{p.lastWorkedAt ? `last worked ${ago(p.lastWorkedAt)}` : "not started yet"}</span>
       </div>
       <p className="resume-where"><b>{r.part.name}{r.part.make > 1 ? ` ${r.copy + 1} of ${r.part.make}` : ""}</b> · {what}</p>
       {r.note && <p className="stop-note">“{r.note}”</p>}
@@ -130,8 +135,13 @@ function ResumeCard({ p, r, total, onJump }) {
 }
 
 function PartTabs({ p, part, copy, onSelect }) {
+  // Keep the selected chips in view (the 14th of 20 squares is far off-screen).
+  const ref = useRef(null);
+  useEffect(() => {
+    ref.current?.querySelectorAll(".chip.on").forEach((el) => el.scrollIntoView({ inline: "center", block: "nearest" }));
+  }, [part.id, copy]);
   return (
-    <>
+    <div ref={ref}>
       <div className="part-tabs" role="tablist" aria-label="Parts">
         {p.pattern.parts.map((x) => {
           let d = 0, t = 0;
@@ -156,7 +166,7 @@ function PartTabs({ p, part, copy, onSelect }) {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -213,19 +223,7 @@ function StepView({ step, cs, nextKey, pattern, onToggle, onNote, onCounter }) {
           <LineBody step={step} heading={headingOf(step)} pattern={pattern} />
         </div>
       </div>
-      {!single && (
-        <ul className="units">
-          {units.map((u) => (
-            <li key={u.key} className={"unit" + (u.key === nextKey ? " next" : "") + (cs.done[u.key] ? " done" : "")} data-unit={u.key}>
-              <div className="step-row">
-                <Check done={!!cs.done[u.key]} onClick={() => onToggle(u)} label={u.label} />
-                <span className="unit-label">{u.label}</span>
-              </div>
-              <NoteBox unit={u} cs={cs} isNext={u.key === nextKey} onNote={onNote} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {!single && <RangeUnits units={units} cs={cs} nextKey={nextKey} onToggle={onToggle} onNote={onNote} />}
       {single && <NoteBox unit={units[0]} cs={cs} isNext={units[0].key === nextKey} onNote={onNote} />}
     </article>
   );
@@ -254,19 +252,19 @@ function RepeatView({ step, units, cs, nextKey, pattern, isNext, allDone, onTogg
 
   if (step.times == null) {
     const u = units[0];
-    const n = cs.counters[step.id] || 0;
+    const n = cs.counters[u.key] || 0;
     return (
       <article className={"step repeat" + (isNext ? " next" : "") + (allDone ? " done" : "")} data-unit={u.key}>
         <h3 className="step-head">{head}</h3>
         <p className="until">Repeat until {step.until}</p>
         {step.text && <p className="step-text">{step.text}</p>}
         <div className="repeat-lines">
-          {step.steps.map((c) => <div key={c.id} className="repeat-line"><LineBody step={c} heading={repeatLineHeading(c, step)} pattern={pattern} /></div>)}
+          <RepeatLines step={step} pattern={pattern} />
         </div>
         <div className="counter">
-          <button type="button" className="btn round" onClick={() => onCounter(step, n - 1)} aria-label="One row less">−</button>
+          <button type="button" className="btn round" onClick={() => onCounter(u, n - 1)} aria-label="One row less">−</button>
           <div className="counter-val"><b>{n}</b><span>rows worked</span></div>
-          <button type="button" className="btn round" onClick={() => onCounter(step, n + 1)} aria-label="One more row">+</button>
+          <button type="button" className="btn round" onClick={() => onCounter(u, n + 1)} aria-label="One more row">+</button>
         </div>
         <div className="step-row">
           <Check done={!!cs.done[u.key]} onClick={() => onToggle(u)} label={`${head} finished`} big />
@@ -292,7 +290,7 @@ function RepeatView({ step, units, cs, nextKey, pattern, isNext, allDone, onTogg
       </div>
       {step.text && <p className="step-text">{step.text}</p>}
       <div className="repeat-lines">
-        {step.steps.map((c) => <div key={c.id} className="repeat-line"><LineBody step={c} heading={repeatLineHeading(c, step)} pattern={pattern} /></div>)}
+        <RepeatLines step={step} pattern={pattern} />
       </div>
       {!showAll && step.times > 2 && <button type="button" className="link-btn" onClick={() => setShowAll(true)}>Show all {step.times} repeats</button>}
       <ol className="reps">
@@ -300,15 +298,27 @@ function RepeatView({ step, units, cs, nextKey, pattern, isNext, allDone, onTogg
           <li key={i} className={groups[i].every((u) => cs.done[u.key]) ? "done" : ""}>
             <span className="rep-no">Repeat {i + 1}</span>
             <ul className="units">
-              {groups[i].map((u) => (
-                <li key={u.key} className={"unit" + (u.key === nextKey ? " next" : "") + (cs.done[u.key] ? " done" : "")} data-unit={u.key}>
-                  <div className="step-row">
-                    <Check done={!!cs.done[u.key]} onClick={() => onToggle(u)} label={`${u.label}, repeat ${i + 1}`} />
-                    <span className="unit-label">{u.label}</span>
-                  </div>
-                  <NoteBox unit={u} cs={cs} isNext={u.key === nextKey} onNote={onNote} />
-                </li>
-              ))}
+              {groups[i].map((u) => {
+                // Units of a repeat nested in this one say which inner repetition they are.
+                const inner = u.rep && u.rep.stepId !== step.id ? ` · ${u.rep.label || "inner repeat"} ${u.rep.i} of ${u.rep.of}` : "";
+                const n = cs.counters[u.key] || 0;
+                return (
+                  <li key={u.key} className={"unit" + (u.key === nextKey ? " next" : "") + (cs.done[u.key] ? " done" : "")} data-unit={u.key}>
+                    <div className="step-row">
+                      <Check done={!!cs.done[u.key]} onClick={() => onToggle(u)} label={`${u.label}${inner}, repeat ${i + 1}`} />
+                      <span className="unit-label grow">{u.label}{inner && <small className="meta">{inner}</small>}</span>
+                      {u.kind === "counter" && (
+                        <span className="mini-counter">
+                          <button type="button" className="btn small" onClick={() => onCounter(u, n - 1)} aria-label="One row less">−</button>
+                          <b aria-label={`${n} rows worked`}>{n}</b>
+                          <button type="button" className="btn small" onClick={() => onCounter(u, n + 1)} aria-label="One more row">+</button>
+                        </span>
+                      )}
+                    </div>
+                    <NoteBox unit={u} cs={cs} isNext={u.key === nextKey} onNote={onNote} />
+                  </li>
+                );
+              })}
             </ul>
           </li>
         ))}
@@ -316,6 +326,54 @@ function RepeatView({ step, units, cs, nextKey, pattern, isNext, allDone, onTogg
       {showAll && <button type="button" className="link-btn" onClick={() => setShowAll(false)}>Show fewer</button>}
     </article>
   );
+}
+
+// Rows of a range. Long ranges (a 200-row border) show only the rows around
+// the next one, with the rest one tap away.
+const RANGE_SHOWN = 12;
+function RangeUnits({ units, cs, nextKey, onToggle, onNote }) {
+  const [all, setAll] = useState(false);
+  const open = units.findIndex((u) => !cs.done[u.key]);
+  const long = units.length > RANGE_SHOWN;
+  const from = open === -1 ? units.length - 1 : Math.max(0, open - 1);
+  const shown = !long || all ? units : units.slice(from, from + 4);
+  const before = long && !all ? from : 0;
+  const after = long && !all ? units.length - from - shown.length : 0;
+  return (
+    <>
+      {before > 0 && <button type="button" className="link-btn" onClick={() => setAll(true)}>{units[0].label}–{units[before - 1].label.replace(/^\D+/, "")}: {units.slice(0, before).every((u) => cs.done[u.key]) ? "done" : "show"} · show all</button>}
+      <ul className="units">
+        {shown.map((u) => (
+          <li key={u.key} className={"unit" + (u.key === nextKey ? " next" : "") + (cs.done[u.key] ? " done" : "")} data-unit={u.key}>
+            <div className="step-row">
+              <Check done={!!cs.done[u.key]} onClick={() => onToggle(u)} label={u.label} />
+              <span className="unit-label">{u.label}</span>
+            </div>
+            <NoteBox unit={u} cs={cs} isNext={u.key === nextKey} onNote={onNote} />
+          </li>
+        ))}
+      </ul>
+      {after > 0 && <button type="button" className="link-btn" onClick={() => setAll(true)}>{after} more {after === 1 ? "row" : "rows"} · show all</button>}
+      {long && all && <button type="button" className="link-btn" onClick={() => setAll(false)}>Show fewer</button>}
+    </>
+  );
+}
+
+// The instructions of a repeat's lines; a repeat inside it is shown nested.
+function RepeatLines({ step, pattern }) {
+  return step.steps.map((c) => (
+    <div key={c.id} className="repeat-line">
+      {c.kind === "repeat" ? (
+        <div className="nested-repeat">
+          <h4 className="step-head">{c.label || "Repeat"} <small className="meta">{c.times != null ? `× ${c.times}` : `until ${c.until}`}</small></h4>
+          {c.text && <p className="step-text">{c.text}</p>}
+          <div className="repeat-lines"><RepeatLines step={c} pattern={pattern} /></div>
+        </div>
+      ) : (
+        <LineBody step={c} heading={repeatLineHeading(c, step)} pattern={pattern} />
+      )}
+    </div>
+  ));
 }
 
 // "Where I stopped" note. Always offered on the row to work next; elsewhere
@@ -449,6 +507,12 @@ function ProjectMenu({ p, onClose }) {
         {p.status === "active" && <button type="button" className="btn wide" onClick={() => setStatus("paused")}>Pause (moves down the list)</button>}
         {p.status !== "finished" && <button type="button" className="btn wide" onClick={() => setStatus("finished")}>Mark as finished</button>}
         <button type="button" className="btn wide" onClick={() => { onClose(); go("p/" + p.id + "/reimport"); }}>Convert the pattern again…</button>
+        {p.previous && (
+          <button type="button" className="btn wide" onClick={() => {
+            patchProject(p.id, (d) => { const cur = { pattern: d.pattern, progress: d.progress, at: new Date().toISOString() }; d.pattern = d.previous.pattern; d.progress = d.previous.progress; d.previous = cur; });
+            onClose(); toast("Previous version restored");
+          }}>Undo the last conversion{p.previous.at ? ` (${fmtDate(p.previous.at)})` : ""}</button>
+        )}
         {!confirm ? (
           <button type="button" className="btn wide danger" onClick={() => setConfirm(true)}>Delete project…</button>
         ) : (
@@ -456,7 +520,7 @@ function ProjectMenu({ p, onClose }) {
             <p>Delete <b>{p.pattern.title}</b> and all its progress from this device?</p>
             <div className="row-gap">
               <button type="button" className="btn" onClick={() => setConfirm(false)}>Keep it</button>
-              <button type="button" className="btn danger" onClick={() => { patch((s) => { s.projects = s.projects.filter((x) => x.id !== p.id); }); go(""); }}>Delete</button>
+              <button type="button" className="btn danger" onClick={() => { patch((s) => { s.projects = s.projects.filter((x) => x.id !== p.id); }); go("", { replace: true }); }}>Delete</button>
             </div>
           </div>
         )}

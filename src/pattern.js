@@ -27,9 +27,29 @@ export function strList(v) {
 }
 
 const str = (v) => (v == null ? "" : String(v).trim());
+// First whole number in a value: 5, "5", "Rnd 5 (12 sts)" → 5.
 const int = (v) => {
-  const n = typeof v === "number" ? v : parseInt(String(v ?? "").replace(/[^\d-]/g, ""), 10);
-  return Number.isFinite(n) ? Math.trunc(n) : null;
+  if (typeof v === "number") return Number.isFinite(v) ? Math.trunc(v) : null;
+  const m = String(v ?? "").match(/-?\d+/);
+  return m ? parseInt(m[0], 10) : null;
+};
+// A count written by a chatbot: 3, "3", "3 times" are plain; "10 (12, 14)"
+// or "2 pairs" are read as their first number with a warning; text without a
+// leading number ("until 120 cm") is not a count at all.
+function count(v, what, ctx) {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? Math.trunc(v) : null;
+  const t = String(v).trim();
+  if (/^\d+\s*(x|×|times?)?$/i.test(t)) return parseInt(t, 10);
+  if (/^\d/.test(t)) { const n = parseInt(t, 10); ctx.warn(`${what}: “${t}” was read as ${n}. Check it against the pattern.`); return n; }
+  return null;
+}
+
+// A range written as text: "12-18", "Rnds 12–18" → [12, 18]; otherwise null.
+const range = (v) => {
+  if (typeof v !== "string") return null;
+  const m = v.match(/(\d+)\s*(?:-|–|—|to)\s*(\d+)/);
+  return m ? [parseInt(m[1], 10), parseInt(m[2], 10)] : null;
 };
 export const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -58,11 +78,13 @@ function normAction(v) {
 }
 
 // Makes ids unique across the whole pattern: progress is stored by id, so a
-// clash would tick two rows at once.
+// clash would tick two rows at once. Ids are also used as object keys, so
+// names like "constructor" (inherited by every object) are avoided.
 function idMaker() {
   const seen = new Set();
   return (wanted, fallback) => {
-    const base = slug(wanted) || fallback;
+    let base = slug(wanted) || fallback;
+    if (base in Object.prototype) base += "-x";
     let id = base, n = 2;
     while (seen.has(id)) id = `${base}-${n++}`;
     seen.add(id);
@@ -71,6 +93,7 @@ function idMaker() {
 }
 
 function normStep(raw, ctx, path) {
+  const where = (s) => `${ctx.part}${s ? `, ${s}` : ""}`;
   if (typeof raw === "string") raw = { kind: "row", text: raw };
   if (!raw || typeof raw !== "object") return null;
   let kind = KIND_ALIASES[str(raw.kind || raw.type).toLowerCase()];
@@ -86,12 +109,13 @@ function normStep(raw, ctx, path) {
   if (note) s.note = note;
 
   if (kind === "row" || kind === "round") {
-    let from = int(raw.from ?? raw.number), to = int(raw.to ?? raw.number);
+    const r = range(raw.from) || range(raw.number);
+    let from = r ? r[0] : int(raw.from ?? raw.number), to = r ? r[1] : int(raw.to ?? raw.number);
     if (from != null && to == null) to = from;
     if (to != null && from == null) from = to;
     if (from != null && to != null) {
       if (to < from) [from, to] = [to, from];
-      if (to - from > 999) { ctx.warn(`${label || s.id}: range ${from}–${to} is too long, kept as one line.`); }
+      if (to - from > 999) { ctx.warn(`${where(label)}: range ${from}–${to} is too long, kept as one line.`); }
       else if (to > from) { s.from = from; s.to = to; }
       else s.number = from;
     }
@@ -99,24 +123,27 @@ function normStep(raw, ctx, path) {
     if (count != null && str(count) !== "") s.count = typeof count === "number" ? count : str(count);
     const st = strList(raw.stitches).map((c) => c.toLowerCase());
     if (st.length) s.stitches = [...new Set(st)];
-    if (!text && !label) { ctx.warn(`A ${kind} without text was skipped.`); return null; }
+    if (!text && !label) { ctx.warn(`${where(from != null ? `${kind === "round" ? "Rnd" : "Row"} ${from}${to > from ? `–${to}` : ""}` : "")}: a ${kind} without instructions was skipped.`); return null; }
   } else if (kind === "repeat") {
-    const times = int(raw.times ?? raw.repeat ?? raw.repeats ?? raw.count);
+    const rawTimes = raw.times ?? raw.repeat ?? raw.repeats;
+    const times = count(rawTimes, where(label || "a repeat"), ctx);
     if (times != null && times > 0) s.times = Math.min(times, 500);
-    const until = str(raw.until);
+    let until = str(raw.until);
+    if (!until && times == null && typeof rawTimes === "string" && rawTimes.trim()) until = rawTimes.trim().replace(/^until\s+/i, "");
     if (until) s.until = until;
     if (s.times == null && !s.until) s.until = "the pattern says to stop";
     s.steps = (Array.isArray(raw.steps) ? raw.steps : [])
       .map((c, i) => normStep(c, ctx, `${s.id}-${i + 1}`))
-      .filter((c) => c && c.kind !== "repeat" || (c && c.kind === "repeat" && c.times != null));
+      .filter(Boolean);
     if (!s.steps.some((c) => c.kind !== "note")) {
-      if (!text) { ctx.warn(`${label || "A repeat"} had no rows and was skipped.`); return null; }
+      if (!text) { ctx.warn(`${where(label || "a repeat")}: no rows inside, skipped.`); return null; }
       // A repeat described only in words still has to be worked: one line per repeat.
       s.steps = [{ id: ctx.id(`${s.id}-row`, `${s.id}-row`), kind: "row", text }];
     }
   } else if (kind === "action") {
     s.action = normAction(raw.action || raw.what || label || text);
-    if (!text && !label) { ctx.warn("An action without text was skipped."); return null; }
+    if (!text && !label) { ctx.warn(`${where()}: an action without text was skipped.`); return null; }
+    if (!text) s.text = label;
   } else if (kind === "note") {
     if (!text && !label) return null;
   }
@@ -127,7 +154,8 @@ function normPart(raw, ctx, i) {
   if (!raw || typeof raw !== "object") return null;
   const name = str(raw.name || raw.title || raw.label) || `Part ${i + 1}`;
   const p = { id: ctx.id(raw.id || name, `part-${i + 1}`), name };
-  const make = int(raw.make ?? raw.quantity ?? raw.copies);
+  ctx.part = name;
+  const make = count(raw.make ?? raw.quantity ?? raw.copies, `${name}: how many to make`, ctx);
   p.make = make != null && make > 0 ? Math.min(make, 200) : 1;
   const type = slug(raw.type);
   p.type = PART_TYPES.includes(type) ? type : /assembl|making.up|sew/.test(slug(name)) ? "assembly" : /finish/.test(slug(name)) ? "finishing" : "piece";
@@ -139,7 +167,33 @@ function normPart(raw, ctx, i) {
     .map((s, j) => normStep(s, ctx, `${p.id}-${j + 1}`))
     .filter(Boolean);
   if (!p.steps.length) { ctx.warn(`${name} had no steps and was skipped.`); return null; }
+  capUnits(p, ctx);
   return p;
+}
+
+// Nested repeats multiply (500 × 500 × a range…), which would make a part too
+// big to show or store. Over the limit, the biggest counted repeats become
+// counters: the user counts repetitions instead of ticking each row.
+export const MAX_UNITS_PER_PART = 3000;
+const unitCount = (steps) => steps.reduce((n, s) => n + (
+  s.kind === "note" ? 0
+    : s.kind === "repeat" ? (s.times == null ? 1 : s.times * unitCount(s.steps))
+      : s.from != null ? s.to - s.from + 1 : 1), 0);
+
+function capUnits(part, ctx) {
+  while (unitCount(part.steps) > MAX_UNITS_PER_PART) {
+    let biggest = null, size = 0;
+    const walk = (steps) => steps.forEach((s) => {
+      if (s.kind !== "repeat") return;
+      if (s.times != null) { const n = s.times * unitCount(s.steps); if (n > size) { biggest = s; size = n; } }
+      walk(s.steps);
+    });
+    walk(part.steps);
+    if (!biggest) break;
+    biggest.until = `you've worked it ${biggest.times} times`;
+    delete biggest.times;
+    ctx.warn(`${part.name}: “${biggest.label || "a repeat"}” is too long to tick row by row, so it has a counter instead.`);
+  }
 }
 
 export function normalizePattern(raw) {
@@ -224,8 +278,13 @@ export function unitsOfStep(step) {
   return out;
 }
 
+// Called many times per render (tabs, progress, resume card), so cached per
+// part object; parts are replaced, never mutated, when the state changes.
+const unitCache = new WeakMap();
 export function unitsOfPart(part) {
-  return part.steps.flatMap((s) => unitsOfStep(s));
+  let u = unitCache.get(part);
+  if (!u) { u = part.steps.flatMap((s) => unitsOfStep(s)); unitCache.set(part, u); }
+  return u;
 }
 
 // Every stitch code a step (and its children) uses, in order of first use.
@@ -238,8 +297,20 @@ export function stitchesOfStep(step) {
 
 // ---- reading the chatbot's answer ----
 
+// Finds the JSON object in a pasted answer. Chatbots wrap it in prose that
+// may contain small objects of its own, so an object that looks like a
+// pattern or a backup wins; otherwise the first non-empty object is used.
 export function extractJSON(text) {
-  const s = String(text);
+  const found = jsonObjects(String(text));
+  const best = found.find((v) => Array.isArray(v.parts) || Array.isArray(v.sections) || Array.isArray(v.projects) || (v.pattern && typeof v.pattern === "object"));
+  if (best) return best;
+  if (found.length) return found[0];
+  if (/[{[]/.test(text) && /"parts"|"projects"/.test(text)) throw new Error("Found the pattern, but it isn't valid JSON (maybe cut off). Ask the chatbot to send the complete JSON again.");
+  throw new Error("No JSON found in the pasted text.");
+}
+
+function jsonObjects(s) {
+  const out = [];
   for (let start = s.indexOf("{"); start !== -1; start = s.indexOf("{", start + 1)) {
     let depth = 0, inStr = false, esc = false;
     for (let i = start; i < s.length; i++) {
@@ -251,10 +322,16 @@ export function extractJSON(text) {
       else if (c === "}" && --depth === 0) {
         // A trivial brace expression in surrounding prose must not hijack the
         // import: only a non-empty object counts.
-        try { const v = JSON.parse(s.slice(start, i + 1)); if (v && typeof v === "object" && Object.keys(v).length) return v; } catch (e) { /* keep scanning */ }
+        try {
+          const chunk = s.slice(start, i + 1);
+          let v;
+          // Chatbots sometimes leave trailing commas: "[1, 2,]".
+          try { v = JSON.parse(chunk); } catch (e) { v = JSON.parse(chunk.replace(/,(\s*[}\]])/g, "$1")); }
+          if (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length) { out.push(v); start = i; }
+        } catch (e) { /* keep scanning */ }
         break;
       }
     }
   }
-  throw new Error("No JSON found in the pasted text.");
+  return out;
 }

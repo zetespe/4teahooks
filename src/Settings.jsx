@@ -45,7 +45,11 @@ export default function Settings() {
     if (!file) return;
     try {
       const obj = extractJSON(await file.text());
-      const n = Array.isArray(obj.projects) ? obj.projects.length : 0;
+      if (!Array.isArray(obj.projects) && !obj.project) {
+        toast(Array.isArray(obj.parts) || obj.pattern ? "That's a pattern, not a backup. Start it with Projects → New." : "That file isn't a 4tea Hooks backup.", 4500);
+        return;
+      }
+      const n = Array.isArray(obj.projects) ? obj.projects.length : 1;
       if (!S.projects.length) { restore(obj, "merge"); return; }
       setPending({ obj, n, date: obj.exportedAt ? fmtDate(obj.exportedAt) : null });
     } catch (e) { toast("Restore failed: " + e.message, 4000); }
