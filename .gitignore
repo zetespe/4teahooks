@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+.DS_Store
+.idea
+.vscode/*
+
+# Personal data: backups and pasted patterns must never be committed (the repo is public)
+4teahooks-*.json
+*backup*.json

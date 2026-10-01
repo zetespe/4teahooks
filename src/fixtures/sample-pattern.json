@@ -1,0 +1,52 @@
+{
+  "type": "4tea-hooks-pattern",
+  "version": 1,
+  "title": "Pocket Bunny (sample)",
+  "designer": "4tea Hooks sample, written for testing",
+  "sourceUrl": "https://example.com/pocket-bunny",
+  "category": "amigurumi",
+  "size": "One size",
+  "terminology": "US",
+  "materials": {
+    "yarns": [{ "id": "A", "label": "Cream, DK cotton, 30 g" }, { "id": "B", "label": "Pink, DK cotton, a little" }],
+    "hook": "2.5 mm",
+    "notions": ["Safety eyes 6 mm ×2", "Fibre fill", "Stitch marker", "Tapestry needle"]
+  },
+  "gauge": "Not critical; work tightly.",
+  "notes": ["Worked in continuous rounds. Move the marker up each round."],
+  "stitches": [
+    { "code": "inv dec", "name": "invisible decrease", "how": "Insert into the front loops of the next 2 sts\nYarn over, pull through both front loops\nYarn over, pull through 2" }
+  ],
+  "parts": [
+    {
+      "id": "body", "name": "Head and body", "make": 1, "yarn": "A",
+      "steps": [
+        { "id": "b1", "kind": "round", "number": 1, "text": "6 sc in a magic ring", "count": 6, "stitches": ["MR", "sc"], "original": "Rnd 1: 6 sc in MR (6)" },
+        { "id": "b2", "kind": "round", "number": 2, "text": "inc in each st around", "count": 12, "stitches": ["inc"] },
+        { "id": "b3", "kind": "round", "from": 3, "to": 6, "text": "sc in each st around", "count": 12, "stitches": ["sc"] },
+        { "id": "b-eyes", "kind": "action", "action": "eyes", "text": "Insert safety eyes between Rnds 4 and 5, 4 sts apart." },
+        { "id": "b7", "kind": "round", "number": 7, "text": "[inv dec] 6 times", "count": 6, "stitches": ["inv dec"] },
+        { "id": "b-close", "kind": "action", "action": "fasten off", "text": "Stuff, fasten off and close the hole." }
+      ]
+    },
+    {
+      "id": "ear", "name": "Ear", "make": 2, "yarn": "B",
+      "steps": [
+        { "id": "e1", "kind": "rnd", "number": 1, "text": "4 sc in a magic ring", "count": 4, "stitches": ["mr", "sc"] },
+        { "id": "e2", "kind": "repeat", "label": "Rnds 2–3", "times": 2, "steps": [
+          { "id": "e2a", "kind": "round", "text": "sc in each st around", "count": 4, "stitches": ["sc"] }
+        ] },
+        { "id": "e-note", "kind": "note", "text": "Ear shape photo is on the pattern page." }
+      ]
+    },
+    {
+      "id": "making-up", "name": "Making up",
+      "steps": [
+        { "id": "m1", "kind": "action", "action": "sew", "text": "Sew the ears to the top of the head." },
+        { "id": "m2", "kind": "repeat", "label": "Scarf rows", "until": "the scarf goes round the neck", "steps": [
+          { "id": "m2a", "kind": "row", "text": "ch 1, sc across, turn", "stitches": ["ch", "sc"] }
+        ] }
+      ]
+    }
+  ]
+}

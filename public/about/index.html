@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>About 4tea Hooks</title>
+  <meta name="description" content="4tea Hooks keeps your place in any crochet pattern. Free, no account, no ads; your projects stay on your device." />
+  <meta name="theme-color" content="#f7f1e8" />
+  <link rel="icon" type="image/svg+xml" href="../icon.svg" />
+  <style>
+    :root {
+      --bg: #f7f1e8; --panel: #fffaf3; --line: #e4d8c9;
+      --fg: #2b2420; --muted: #6c6158; --accent: #a94a34; --accent-ink: #fff;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1c1916; --panel: #26221e; --line: #3d3630; --fg: #f1e9df; --muted: #b5a899; --accent: #ec8d72; --accent-ink: #231a16; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 40px 16px 80px; }
+    h1 { font-size: 34px; margin: 0 0 4px; }
+    h2 { font-size: 21px; margin: 40px 0 10px; }
+    p { margin: 10px 0; }
+    .tag { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: .04em; }
+    .muted { color: var(--muted); }
+    .cta { display: inline-block; background: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 14px 22px; border-radius: 999px; text-decoration: none; margin: 18px 10px 0 0; }
+    .cta.ghost { background: var(--panel); color: var(--fg); border: 1px solid var(--line); font-weight: 600; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; }
+    .card h3 { margin: 0 0 6px; font-size: 17px; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    ul { padding-left: 22px; } li { margin: 6px 0; }
+    a { color: var(--accent); }
+    footer { margin-top: 56px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    code { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="tag">FREE · NO ADS · NO ACCOUNT · WORKS OFFLINE</div>
+  <h1>4tea Hooks</h1>
+  <p class="muted">Keep your place in any crochet pattern, even when you pick it up again a week later.</p>
+
+  <a class="cta" href="../">Open the app</a>
+  <a class="cta ghost" href="https://github.com/zetespe/4teahooks">View the source</a>
+
+  <h2>What it does</h2>
+  <div class="card"><h3>Any pattern, turned into rows to tick</h3><p>Toys, garments, blankets, granny squares. Your chatbot (Claude, ChatGPT, Gemini…) converts the pattern for the size you're making; the app splits it into parts and rows.</p></div>
+  <div class="card"><h3>Never lose your place</h3><p>Tick rounds as you go. Parts you make twice (ears, sleeves) are tracked separately. Stopped mid-row? Leave a note right on it.</p></div>
+  <div class="card"><h3>What was that stitch again?</h3><p>Tap any stitch in a row to see how it's made, with the US/UK name, because the same name means different stitches in US and UK patterns.</p></div>
+  <div class="card"><h3>Several projects at once</h3><p>Each project opens where you left off, with a link back to the original pattern for photos and charts.</p></div>
+
+  <h2>Your projects stay with you</h2>
+  <p>4tea Hooks runs entirely on your device. Your patterns, progress and notes are stored in the
+  browser's local storage. There is <b>no account, no cloud and no server that could see your data</b>.
+  The chatbot conversion happens in the chatbot you choose, by copy and paste: you decide what you share.</p>
+  <p>Your data exists in one place, so save a backup file now and then (Backup &amp; settings). Keep it in
+  Files, Google Drive, email, wherever you like, and restore it on any device.</p>
+  <p><b>What is counted, and only this:</b> to know whether anyone uses the app, visits to this page are
+  counted, and the app sends one anonymous “opened today / this week / this month” signal plus a single
+  “first use” signal. They go to <a href="https://www.goatcounter.com">GoatCounter</a>, a privacy-friendly
+  counter without cookies. They carry no ID and none of your patterns or progress. Like any website visit,
+  GoatCounter also notes the browser, system and country with each count (and, for visits to this page,
+  the screen width and the page that linked here), but not your IP address. The app's counts are never
+  linked to each other. You can switch the app's count off in Backup &amp; settings.</p>
+
+  <h2>Install it</h2>
+  <ul>
+    <li><b>iPhone (Safari):</b> <a href="../">open the app</a> → Share → <b>Add to Home Screen</b>.</li>
+    <li><b>Android (Chrome):</b> open the app → ⋮ → <b>Add to Home screen</b>.</li>
+  </ul>
+
+  <h2>For the curious</h2>
+  <ul>
+    <li><a href="https://github.com/zetespe/4teahooks">Source code</a>: a small React + Vite web app.</li>
+    <li><a href="https://github.com/zetespe/4teahooks/blob/main/docs/AI-PROTOCOL.md">The pattern format</a> chatbots use to convert patterns.</li>
+  </ul>
+
+  <h2>License</h2>
+  <p>Source-available under the
+  <a href="https://github.com/zetespe/4teahooks/blob/main/LICENSE.md">PolyForm Noncommercial License 1.0.0</a>:
+  free to use, copy, modify and share for personal and other noncommercial purposes.</p>
+
+  <footer>4tea Hooks · brewed by <a href="https://4teahub.com">4tea</a> · your projects never leave your device.</footer>
+</main>
+<!-- Anonymous page-view count (GoatCounter: no cookies, no personal data). -->
+<script data-goatcounter="https://4teahooks.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
