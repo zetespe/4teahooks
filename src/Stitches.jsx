@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { STITCHES, TERMS } from "./stitches";
+import { StitchSymbol, VideoLink } from "./symbols";
 
 // The built-in library, browsable and searchable in US or UK terms.
 export default function Stitches() {
@@ -46,9 +47,13 @@ export default function Stitches() {
                   </button>
                   {isOpen && (
                     <div className="how">
-                      {s.uk && s.uk !== s.name && <p className="meta">US: {s.name} ({s.us[0]}) · UK: {s.uk} ({s.ukAbbr[0]})</p>}
+                      <div className="how-head">
+                        {s.uk && s.uk !== s.name ? <p className="meta">US: {s.name} ({s.us[0]}) · UK: {s.uk} ({s.ukAbbr[0]})</p> : <span />}
+                        <StitchSymbol id={s.id} label={s.name} />
+                      </div>
                       <ol>{s.how.map((h, i) => <li key={i}>{h}</li>)}</ol>
                       {s.tip && <p className="tip">{s.tip}</p>}
+                      <VideoLink name={uk ? s.uk || s.name : s.name} uk={uk && !!s.uk && s.uk !== s.name} />
                     </div>
                   )}
                 </li>

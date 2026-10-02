@@ -4,6 +4,7 @@ import { unitsOfStep, stitchesOfStep } from "./pattern";
 import { copyState, editCopy, partProgress, projectProgress, resumePoint } from "./progress";
 import { explain } from "./stitches";
 import { useWakeLock } from "./useWakeLock";
+import { StitchSymbol, VideoLink } from "./symbols";
 import { Bar, Check, Icon, Sheet, ago, fmtDate, go, toast } from "./ui";
 
 const ACTION_LABEL = {
@@ -422,17 +423,22 @@ export function StitchInfo({ info, terminology }) {
         <div>
           <h4>{own.name || code} <small>this pattern's definition</small></h4>
           {own.how.length > 0 && <ol>{own.how.map((s, i) => <li key={i}>{s}</li>)}</ol>}
+          {!lib && (own.name || code) && <VideoLink name={own.name || code} />}
         </div>
       )}
       {lib && (
         <div>
-          <h4>{uk ? lib.uk || lib.name : lib.name}</h4>
+          <div className="how-head">
+            <h4>{uk ? lib.uk || lib.name : lib.name}</h4>
+            <StitchSymbol id={lib.id} label={lib.name} />
+          </div>
           {(lib.uk && lib.uk !== lib.name) && (
             <p className="meta">US: {lib.name} ({lib.us[0]}) · UK: {lib.uk} ({lib.ukAbbr[0]}){info.ambiguous ? `. Careful: “${code}” means different stitches in US and UK patterns; this pattern uses ${terminology === "unknown" ? "unknown (read as US)" : terminology} terms.` : ""}</p>
           )}
           {!own && <ol>{lib.how.map((s, i) => <li key={i}>{s}</li>)}</ol>}
           {own && lib.how.length > 0 && <details><summary>General how-to</summary><ol>{lib.how.map((s, i) => <li key={i}>{s}</li>)}</ol></details>}
           {lib.tip && <p className="tip">{lib.tip}</p>}
+          <VideoLink name={uk ? lib.uk || lib.name : lib.name} uk={uk && !!lib.uk && lib.uk !== lib.name} />
         </div>
       )}
       {!own && !lib && term && <p><b>{code}</b>: {term}</p>}
