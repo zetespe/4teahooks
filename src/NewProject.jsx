@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore, patch, newProject } from "./store";
 import { normalizePattern, extractJSON, unitsOfPart } from "./pattern";
-import { pruneProgress, keptAfterReimport } from "./progress";
+import { remapProgress, keptAfterReimport } from "./progress";
 import { aiPrompt } from "./prompt";
 import { copyText, toast, go, Icon } from "./ui";
 
@@ -23,7 +23,9 @@ export default function NewProject({ replaceId = null }) {
     if (!text.trim()) { setError("Paste the chatbot's answer first."); return; }
     try {
       const r = normalizePattern(extractJSON(text));
-      if (!r.pattern.sourceUrl && /^https?:\/\//i.test(link.trim())) r.pattern.sourceUrl = link.trim();
+      // The link typed here is the exact pattern page; chatbots sometimes
+      // answer with the site's home page instead, so the typed one wins.
+      if (/^https?:\/\//i.test(link.trim())) r.pattern.sourceUrl = link.trim();
       setResult(r);
       // The preview opens below the fold on a phone: bring it into view.
       setTimeout(() => document.getElementById("preview")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
@@ -43,8 +45,8 @@ export default function NewProject({ replaceId = null }) {
       patch((s) => {
         const p = s.projects.find((x) => x.id === existing.id);
         p.previous = { pattern: p.pattern, progress: p.progress, at: new Date().toISOString() };
+        p.progress = remapProgress(p.pattern, p.progress, result.pattern);
         p.pattern = result.pattern;
-        p.progress = pruneProgress(p.progress, result.pattern);
         p.updatedAt = new Date().toISOString();
       });
       toast("Pattern updated. Changed your mind? ⋯ → Undo the last conversion", 4000);
@@ -91,7 +93,7 @@ export default function NewProject({ replaceId = null }) {
         {error && <p className="error" role="alert">{error}</p>}
       </section>
 
-      {result && <Preview result={result} onSave={save} replacing={!!existing} kept={existing ? keptAfterReimport(existing.progress, result.pattern) : null} />}
+      {result && <Preview result={result} onSave={save} replacing={!!existing} kept={existing ? keptAfterReimport(existing.pattern, existing.progress, result.pattern) : null} />}
     </>
   );
 }

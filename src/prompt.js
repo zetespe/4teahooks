@@ -90,7 +90,7 @@ Answer with exactly one JSON object in the format below, nothing else needed. Ru
    - "note": information or anything that can't be written as rows, such as a chart or diagram: describe it briefly and say it's on the pattern page.
 5. "stitches" at the top: the pattern's special stitches and any abbreviation it defines differently from the standard, with "how" as short steps. Standard stitches (ch, sc, dc…) don't need to be listed.
 6. Give every part and step a short unique "id" (letters, numbers, dashes).
-7. Fill "sourceUrl" with the pattern link if there is one, "size" with the size I'm making (or "One size"), and list materials, gauge and important notes.
+7. Fill "sourceUrl" with the exact address of the pattern page (the full link I gave you, not the website's home page), "size" with the size I'm making (or "One size"), and list materials, gauge and important notes.
 
 Format (an example; use the same field names):
 

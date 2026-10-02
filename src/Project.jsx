@@ -505,6 +505,12 @@ function Journal({ p }) {
 
 function ProjectMenu({ p, onClose }) {
   const [confirm, setConfirm] = useState(false);
+  const [link, setLink] = useState(null); // editing the pattern link when not null
+  const validLink = /^https?:\/\/\S+\.\S+/i.test((link || "").trim());
+  const saveLink = () => {
+    patchProject(p.id, (d) => { d.pattern.sourceUrl = link.trim(); d.updatedAt = new Date().toISOString(); }, { count: false });
+    onClose(); toast("Pattern link updated");
+  };
   const setStatus = (status) => { patchProject(p.id, (d) => { d.status = status; }); onClose(); };
   return (
     <Sheet title={p.pattern.title} onClose={onClose}>
@@ -512,6 +518,20 @@ function ProjectMenu({ p, onClose }) {
         {p.status !== "active" && <button type="button" className="btn wide" onClick={() => setStatus("active")}>Back in progress</button>}
         {p.status === "active" && <button type="button" className="btn wide" onClick={() => setStatus("paused")}>Pause (moves down the list)</button>}
         {p.status !== "finished" && <button type="button" className="btn wide" onClick={() => setStatus("finished")}>Mark as finished</button>}
+        {link === null ? (
+          <button type="button" className="btn wide" onClick={() => setLink(p.pattern.sourceUrl || "")}>{p.pattern.sourceUrl ? "Change the pattern link…" : "Add the pattern link…"}</button>
+        ) : (
+          <div className="confirm">
+            <label className="field">
+              <span>Link to the pattern page <small>(your ticks and notes stay as they are)</small></span>
+              <input type="url" inputMode="url" placeholder="https://…" value={link} autoFocus onChange={(e) => setLink(e.target.value)} />
+            </label>
+            <div className="row-gap">
+              <button type="button" className="btn" onClick={() => setLink(null)}>Cancel</button>
+              <button type="button" className="btn primary" disabled={!validLink} onClick={saveLink}>Save link</button>
+            </div>
+          </div>
+        )}
         <button type="button" className="btn wide" onClick={() => { onClose(); go("p/" + p.id + "/reimport"); }}>Convert the pattern again…</button>
         {p.previous && (
           <button type="button" className="btn wide" onClick={() => {

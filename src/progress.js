@@ -103,7 +103,78 @@ export function pruneProgress(progress, pattern) {
 }
 
 // What a re-import would keep: ticks and notes on units that still exist.
-export function keptAfterReimport(progress, pattern) {
+export function keptAfterReimport(oldPattern, progress, pattern) {
   const count = (pr) => Object.values(obj(pr?.copies)).flat().reduce((n, cs) => n + Object.keys(obj(cs?.done)).length + Object.keys(obj(cs?.notes)).length, 0);
-  return { before: count(progress), after: count(pruneProgress(progress, pattern)) };
+  return { before: count(progress), after: count(remapProgress(oldPattern, progress, pattern)) };
+}
+
+// ---- re-import: carry progress over to a new version of the pattern ----
+//
+// A chatbot converting the pattern again may give rows new ids, so progress
+// is matched in steps, each old row used at most once:
+//   1. same unit key (same ids)
+//   2. same row label, same repeat position and same instruction text
+//   3. same row label and repeat position, when that label is unique
+//   4. same instruction text and repeat position, in order of appearance
+// Parts are matched by id, then by name. Rows with no match start fresh.
+
+const normText = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const repPath = (u) => { const out = []; for (let r = u.rep; r; r = r.outer) out.unshift(r.i); return out.join("."); };
+
+function matchUnits(oldUnits, newUnits) {
+  const map = new Map(); // new key -> old key
+  const used = new Set();
+  const take = (nu, ou) => { if (ou && !used.has(ou.key)) { map.set(nu.key, ou.key); used.add(ou.key); return true; } return false; };
+  const oldByKey = new Map(oldUnits.map((u) => [u.key, u]));
+  for (const nu of newUnits) take(nu, oldByKey.get(nu.key));
+  const passes = [
+    (u) => `${u.label}|${repPath(u)}|${normText(u.step.text)}`,
+    (u) => (u.label ? `${u.label}|${repPath(u)}` : null),
+    (u) => (u.step.text ? `${normText(u.step.text)}|${repPath(u)}` : null),
+  ];
+  passes.forEach((sig, pass) => {
+    const bucket = (units) => {
+      const m = new Map();
+      for (const u of units) { const s = sig(u); if (s) { if (!m.has(s)) m.set(s, []); m.get(s).push(u); } }
+      return m;
+    };
+    const olds = bucket(oldUnits.filter((u) => !used.has(u.key)));
+    const news = bucket(newUnits.filter((u) => !map.has(u.key)));
+    for (const [s, list] of news) {
+      const cand = olds.get(s);
+      if (!cand) continue;
+      // Pass 3 (label only) is only safe when the label is unique on both sides.
+      if (pass === 1 && (cand.length !== 1 || list.length !== 1)) continue;
+      list.forEach((nu, i) => take(nu, cand[i]));
+    }
+  });
+  return map;
+}
+
+export function remapProgress(oldPattern, oldProgress, newPattern) {
+  const out = { copies: {}, last: null };
+  const byName = new Map();
+  for (const p of oldPattern.parts) { const k = normText(p.name); byName.set(k, byName.has(k) ? null : p); }
+  const partMap = new Map();
+  for (const np of newPattern.parts) {
+    const op = oldPattern.parts.find((p) => p.id === np.id) || byName.get(normText(np.name)) || null;
+    if (op) partMap.set(op.id, np.id);
+    out.copies[np.id] = [];
+    if (!op) continue;
+    const map = matchUnits(unitsOfPart(op), unitsOfPart(np));
+    const copies = Math.min(np.make, op.make);
+    for (let c = 0; c < copies; c++) {
+      const cs = copyState({ progress: oldProgress }, op.id, c);
+      const next = emptyCopy();
+      for (const [nk, ok] of map) {
+        if (Object.hasOwn(cs.done, ok)) next.done[nk] = cs.done[ok];
+        if (Object.hasOwn(cs.notes, ok)) next.notes[nk] = cs.notes[ok];
+        if (Object.hasOwn(cs.counters, ok)) next.counters[nk] = cs.counters[ok];
+      }
+      out.copies[np.id].push(next);
+    }
+  }
+  const last = oldProgress?.last;
+  if (last && partMap.has(last.partId)) out.last = { partId: partMap.get(last.partId), copy: last.copy };
+  return out;
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import sample from "./fixtures/sample-pattern.json";
-import { normalizePattern } from "./pattern";
+import { normalizePattern, unitsOfPart } from "./pattern";
 import { editCopy, copyState, partProgress, projectProgress, resumePoint, pruneProgress } from "./progress";
 import { newProject, normalizeProject, applyBackup, exportObject, emptyState } from "./store";
 import { findStitch, explain, isAmbiguous } from "./stitches";
@@ -132,7 +132,10 @@ describe("robustness (QA findings)", () => {
     tick(p, "body", 0, "b2");
     const changed = structuredClone(p.pattern);
     changed.parts[0].steps[1].id = "b2-new";
-    expect(keptAfterReimport(p.progress, normalizePattern(changed).pattern)).toEqual({ before: 2, after: 1 });
+    // The renamed row is matched by its label and text, so nothing is lost.
+    expect(keptAfterReimport(p.pattern, p.progress, normalizePattern(changed).pattern)).toEqual({ before: 2, after: 2 });
+    changed.parts[0].steps.splice(0, 2);
+    expect(keptAfterReimport(p.pattern, p.progress, normalizePattern(changed).pattern)).toEqual({ before: 2, after: 0 });
   });
   it("UK full names and abbreviations resolve in the pattern's terms", () => {
     expect(findStitch("double crochet", "US").id).toBe("dc");
@@ -149,5 +152,41 @@ describe("resume order (browser QA)", () => {
     for (const u of partProgress(p.pattern.parts[2], copyState(p, "making-up", 0)).units) tick(p, "making-up", 0, u.key);
     const r = resumePoint(p);
     expect([r.part.id, r.copy]).toEqual(["ear", 1]);
+  });
+});
+
+describe("re-import keeps progress when the chatbot changes ids", async () => {
+  const { remapProgress, keptAfterReimport } = await import("./progress");
+  const done = (pr, part, copy = 0) => Object.keys(pr.copies[part][copy].done).sort();
+
+  it("same pattern, only the link changed: everything kept", () => {
+    const p = make();
+    tick(p, "body", 0, "b1"); tick(p, "body", 0, "b3#5"); tick(p, "ear", 1, "e2@2/e2a");
+    editCopy(p, "body", 0, (cs) => { cs.notes["b3#6"] = "half way"; });
+    const next = structuredClone(p.pattern); next.sourceUrl = "https://example.com/the-real-page";
+    expect(keptAfterReimport(p.pattern, p.progress, next)).toEqual({ before: 4, after: 4 });
+  });
+
+  it("all ids renamed: ticks follow the rows by label, repeat and text", () => {
+    const p = make();
+    tick(p, "body", 0, "b1"); tick(p, "body", 0, "b3#5"); tick(p, "body", 0, "b-eyes"); tick(p, "ear", 1, "e2@2/e2a");
+    const json = JSON.parse(JSON.stringify(p.pattern).replace(/"id":"([^"]+)"/g, '"id":"new-$1"'));
+    const next = normalizePattern(json).pattern;
+    const pr = remapProgress(p.pattern, p.progress, next);
+    expect(done(pr, "new-body")).toEqual(["new-b-eyes", "new-b1", "new-b3#5"]);
+    expect(done(pr, "new-ear", 1)).toEqual(["new-e2@2/new-e2a"]);
+    expect(pr.last).toEqual({ partId: "new-ear", copy: 1 });
+  });
+
+  it("a row inserted in the middle doesn't shift ticks onto the wrong row", () => {
+    const p = make();
+    tick(p, "body", 0, "b1"); tick(p, "body", 0, "b2");
+    const json = structuredClone(p.pattern);
+    json.parts[0].steps.splice(1, 0, { id: "x", kind: "action", action: "place_marker", text: "Place a marker." });
+    json.parts[0].steps.forEach((s, i) => { s.id = "s" + i; });
+    const next = normalizePattern(json).pattern;
+    const pr = remapProgress(p.pattern, p.progress, next);
+    const labels = unitsOfPart(next.parts[0]).filter((u) => pr.copies.body[0].done[u.key]).map((u) => u.label);
+    expect(labels).toEqual(["Rnd 1", "Rnd 2"]);
   });
 });
