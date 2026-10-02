@@ -119,6 +119,16 @@ export default function Settings() {
       </section>
 
       <section className="card">
+        <h2>Anonymous usage count</h2>
+        <p>Please keep this on. It's the only way we know that someone opened the app today, and knowing that people use and love 4tea Hooks keeps us motivated to improve it.</p>
+        <p className="meta">It's completely anonymous: at most one signal per day, week and month, with no ID, no personal data and nothing about your patterns or projects. <a href="about/" target="_blank" rel="noopener">What's counted</a></p>
+        <label className="switch">
+          <input type="checkbox" checked={S.settings.usageCount !== false} onChange={(e) => set("usageCount", e.target.checked)} />
+          <span>Count my use anonymously</span>
+        </label>
+      </section>
+
+      <section className="card">
         <h2>About</h2>
         <p>4tea Hooks is free, has no ads and no accounts. Patterns are converted by the chatbot you choose; the app itself never sends your patterns or progress anywhere.</p>
         <p><a href="about/" target="_blank" rel="noopener">About and privacy</a> · brewed by 4tea</p>

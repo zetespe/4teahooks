@@ -19,7 +19,7 @@ Background research: [`research/market.md`](research/market.md),
   always shown at the top of the project.
 - **English UI.** PWA on GitHub Pages, installable on the phone, works offline.
 - **Anonymous usage counts** via GoatCounter, the same scheme as Gymmy (day/week/month/install,
-  no identifiers).
+  no identifiers; can be switched off in Settings, with a request to keep it on).
 
 ## What the user does
 

@@ -11,8 +11,9 @@
 // and hits would be linked together. The app already dedupes per period.
 // Adding up a period's count gives how many different phones used 4tea Hooks in it,
 // without any identifier: the phone only remembers which periods it already
-// counted. No pattern or project data, no ID, no cookies. Offline opens are
-// retried on the next open in the same period.
+// counted. No pattern or project data, no ID, no cookies. Users can switch it
+// off in Backup & settings (settings.usageCount). Offline opens are retried
+// on the next open in the same period.
 import { getState, patch } from "./store";
 
 export const COUNT_URL = "https://4teahooks.goatcounter.com/count";
@@ -62,11 +63,13 @@ let inFlight = false;
 export async function maybeCountUsage(now = new Date()) {
   if (inFlight || !allowed()) return;
   const st = getState();
+  if (st.settings.usageCount === false) return;
   const due = duePings(st.settings.usageSent, now);
   if (!due.length) return;
   inFlight = true;
   try {
     for (const p of due) {
+      if (getState().settings.usageCount === false) break; // switched off mid-way
       try {
         await fetch(pingUrl(p), { mode: "no-cors", cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", keepalive: true });
       } catch {
