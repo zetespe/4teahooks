@@ -1,7 +1,6 @@
 # Crochet pattern tracker — product spec (draft)
 
-Name: **4tea Hooks**. Signature: *brewed by 4tea*, linking to
-[4teahub.com](https://4teahub.com), the hub for all 4tea apps.
+Name: **4tea Hooks**. Signature: *brewed by 4tea*.
 
 Background research: [`research/market.md`](research/market.md),
 [`research/pattern-anatomy.md`](research/pattern-anatomy.md).
@@ -20,7 +19,7 @@ Background research: [`research/market.md`](research/market.md),
   always shown at the top of the project.
 - **English UI.** PWA on GitHub Pages, installable on the phone, works offline.
 - **Anonymous usage counts** via GoatCounter, the same scheme as Gymmy (day/week/month/install,
-  no identifiers, can be switched off).
+  no identifiers).
 
 ## What the user does
 

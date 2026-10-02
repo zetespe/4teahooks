@@ -15,7 +15,7 @@ export const BACKUP_TYPE = "4tea-hooks-backup";
 export function emptyState() {
   return {
     version: SCHEMA,
-    settings: { keepAwake: true, usageCount: true, usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
+    settings: { keepAwake: true, usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
     projects: [],
   };
 }
@@ -190,9 +190,9 @@ export function useStore() {
 }
 
 export function resetAll() {
-  // Erasing keeps the usage-count choice: an opt-out must survive, and
-  // periods already counted must not be counted again.
-  const keep = state && state.settings ? { usageCount: state.settings.usageCount, usageSent: state.settings.usageSent } : {};
+  // Erasing keeps the record of periods already counted, so they aren't
+  // counted again.
+  const keep = state && state.settings ? { usageSent: state.settings.usageSent } : {};
   try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
   state = emptyState();
   Object.assign(state.settings, keep);

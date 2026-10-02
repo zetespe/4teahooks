@@ -105,16 +105,12 @@ export default function Settings() {
             <span>Keep the screen on while a project is open</span>
           </label>
         )}
-        <label className="switch">
-          <input type="checkbox" checked={S.settings.usageCount !== false} onChange={(e) => set("usageCount", e.target.checked)} />
-          <span>Count my use anonymously <small>(at most one ping per day, week and month; no identifiers, no project data. <a href="about/" target="_blank" rel="noopener">What's counted</a>)</small></span>
-        </label>
       </section>
 
       <section className="card">
         <h2>About</h2>
         <p>4tea Hooks is free, has no ads and no accounts. Patterns are converted by the chatbot you choose; the app itself never sends your patterns or progress anywhere.</p>
-        <p><a href="about/" target="_blank" rel="noopener">About and privacy</a> · <a href="https://4teahub.com" target="_blank" rel="noopener">brewed by 4tea</a></p>
+        <p><a href="about/" target="_blank" rel="noopener">About and privacy</a> · brewed by 4tea</p>
       </section>
 
       <section className="card">

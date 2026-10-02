@@ -30,8 +30,7 @@ stored), dashboard at https://4teahooks.goatcounter.com:
 - **App use** from `src/usage.js`: each device sends at most one `app/day`
   event per day, `app/week` per ISO week, `app/month/new` or
   `app/month/returning` per month, and `app/install` once ever, with
-  GoatCounter sessions off (`ns=1`) and no identifier. Users can switch this
-  off in Backup & settings.
+  GoatCounter sessions off (`ns=1`) and no identifier.
 
 No token or key is involved: the count URL is public by design, and the
 dashboard is behind the GoatCounter account login.
