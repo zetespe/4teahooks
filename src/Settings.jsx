@@ -3,6 +3,7 @@ import { useStore, patch, setState, exportObject, applyBackup, resetAll } from "
 import { extractJSON } from "./pattern";
 import { wakeLockSupported } from "./useWakeLock";
 import { toast, fmtDate } from "./ui";
+import { applyTheme } from "./theme";
 
 const fileName = () => `4teahooks-${new Date().toISOString().slice(0, 10)}.json`;
 
@@ -99,6 +100,16 @@ export default function Settings() {
 
       <section className="card">
         <h2>Settings</h2>
+        <div className="setting">
+          <span id="theme-label">Appearance</span>
+          <div className="seg" role="group" aria-labelledby="theme-label">
+            {[["system", "Auto"], ["light", "Light"], ["dark", "Dark"]].map(([v, label]) => {
+              const on = (S.settings.theme || "system") === v;
+              return <button key={v} type="button" className={on ? "on" : ""} aria-pressed={on} onClick={() => { set("theme", v); applyTheme(v); }}>{label}</button>;
+            })}
+          </div>
+        </div>
+        <p className="meta">Auto follows your phone's light or dark mode.</p>
         {wakeLockSupported && (
           <label className="switch">
             <input type="checkbox" checked={S.settings.keepAwake !== false} onChange={(e) => set("keepAwake", e.target.checked)} />

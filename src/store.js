@@ -15,7 +15,7 @@ export const BACKUP_TYPE = "4tea-hooks-backup";
 export function emptyState() {
   return {
     version: SCHEMA,
-    settings: { keepAwake: true, usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
+    settings: { keepAwake: true, theme: "system", usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
     projects: [],
   };
 }

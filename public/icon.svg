@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs><clipPath id="b"><circle cx="232" cy="280" r="150"/></clipPath></defs>
-  <rect width="512" height="512" fill="#f3efe7"/>
+  <rect width="512" height="512" fill="#f4ebdf"/>
   <circle cx="232" cy="280" r="150" fill="#3e5e49"/>
   <g clip-path="url(#b)" fill="none" stroke="#c9dccb" stroke-width="9" stroke-linecap="round">
     <ellipse cx="232" cy="280" rx="190" ry="60" transform="rotate(-35 232 280)"/>

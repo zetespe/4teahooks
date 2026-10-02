@@ -1,37 +1,55 @@
 :root {
-  --bg: #f3efe7;
-  --surface: #fbf9f4;
-  --surface-2: #e9e3d7;
-  --ink: #2b241f;
-  --muted: #675d53;
-  --line: #ddd5c7;
+  --bg: #f4ebdf;
+  --surface: #fdf8f1;
+  --surface-2: #ede2d2;
+  --ink: #2e241d;
+  --muted: #6b5d50;
+  --line: #e0d2bf;
   --accent: #3e5e49;
   --accent-ink: #fff;
-  --accent-soft: #e0e8de;
+  --accent-soft: #e0e8dc;
   --done: #3b5874;
   --done-soft: #e1e8ef;
   --danger: #983a2c;
-  --shadow: 0 1px 2px rgba(60, 40, 20, .06), 0 2px 8px rgba(60, 40, 20, .05);
+  --shadow: 0 1px 2px rgba(70, 45, 20, .07), 0 2px 8px rgba(70, 45, 20, .06);
   --radius: 14px;
   color-scheme: light;
 }
+/* Dark follows the system unless the user picked a theme in Settings
+   (data-theme on <html>, see theme.js). */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1a1916;
-    --surface: #23211d;
-    --surface-2: #2d2a25;
-    --ink: #ede7dc;
-    --muted: #ada393;
-    --line: #3a362f;
+  :root:not([data-theme="light"]) {
+    --bg: #1e1915;
+    --surface: #28211c;
+    --surface-2: #332a23;
+    --ink: #f0e6da;
+    --muted: #b8a894;
+    --line: #43382e;
     --accent: #a3c2a5;
     --accent-ink: #16211a;
-    --accent-soft: #2b3a2f;
+    --accent-soft: #2c3a2d;
     --done: #94b3cf;
-    --done-soft: #243140;
+    --done-soft: #253140;
     --danger: #e8907f;
     --shadow: none;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #1e1915;
+  --surface: #28211c;
+  --surface-2: #332a23;
+  --ink: #f0e6da;
+  --muted: #b8a894;
+  --line: #43382e;
+  --accent: #a3c2a5;
+  --accent-ink: #16211a;
+  --accent-soft: #2c3a2d;
+  --done: #94b3cf;
+  --done-soft: #253140;
+  --danger: #e8907f;
+  --shadow: none;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -304,7 +322,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 /* ---- stitches library ---- */
 .search-row { display: flex; gap: 8px; align-items: center; }
 .seg { display: flex; flex: none; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
-.seg button { border: none; background: var(--surface); padding: 0 14px; min-height: 44px; font-weight: 700; cursor: pointer; }
+.seg button { border: none; background: var(--surface); padding: 0 13px; min-height: 44px; font-weight: 700; cursor: pointer; }
 .seg button.on { background: var(--accent); color: var(--accent-ink); }
 .lib-group h2 { margin: 18px 0 8px; font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .lib { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
@@ -318,6 +336,7 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .terms dd { margin: 0; }
 
 /* ---- settings ---- */
+.setting { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 8px; font-weight: 600; }
 .switch { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; cursor: pointer; }
 .switch input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: var(--accent); }
 .switch small { color: var(--muted); }
