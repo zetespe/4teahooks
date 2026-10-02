@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs><clipPath id="b"><circle cx="232" cy="280" r="150"/></clipPath></defs>
-  <rect width="512" height="512" fill="#f7f1e8"/>
-  <circle cx="232" cy="280" r="150" fill="#a94a34"/>
-  <g clip-path="url(#b)" fill="none" stroke="#f3c9b8" stroke-width="9" stroke-linecap="round">
+  <rect width="512" height="512" fill="#f3efe7"/>
+  <circle cx="232" cy="280" r="150" fill="#3e5e49"/>
+  <g clip-path="url(#b)" fill="none" stroke="#c9dccb" stroke-width="9" stroke-linecap="round">
     <ellipse cx="232" cy="280" rx="190" ry="60" transform="rotate(-35 232 280)"/>
     <ellipse cx="232" cy="280" rx="190" ry="95" transform="rotate(-35 232 280)"/>
     <ellipse cx="232" cy="280" rx="190" ry="130" transform="rotate(-35 232 280)"/>
     <ellipse cx="300" cy="200" rx="60" ry="190" transform="rotate(-20 300 200)"/>
     <ellipse cx="320" cy="190" rx="95" ry="200" transform="rotate(-20 320 190)"/>
   </g>
-  <path d="M232 430 C 200 470 140 470 96 452" fill="none" stroke="#a94a34" stroke-width="12" stroke-linecap="round"/>
-  <path d="M318 456 L426 104" stroke="#2b2420" stroke-width="22" stroke-linecap="round"/>
-  <path d="M426 104 c9 -30 -22 -42 -34 -20" fill="none" stroke="#2b2420" stroke-width="20" stroke-linecap="round"/>
+  <path d="M232 430 C 200 470 140 470 96 452" fill="none" stroke="#3e5e49" stroke-width="12" stroke-linecap="round"/>
+  <path d="M318 456 L426 104" stroke="#5a3e2b" stroke-width="22" stroke-linecap="round"/>
+  <path d="M426 104 c9 -30 -22 -42 -34 -20" fill="none" stroke="#5a3e2b" stroke-width="20" stroke-linecap="round"/>
 </svg>

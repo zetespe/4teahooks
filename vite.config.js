@@ -22,8 +22,8 @@ export default defineConfig({
         description: 'Keep your place in any crochet pattern. Private: your projects stay on your device.',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f7f1e8',
-        theme_color: '#f7f1e8',
+        background_color: '#f3efe7',
+        theme_color: '#f3efe7',
         start_url: '/4teahooks/',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
