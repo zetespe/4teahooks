@@ -36,11 +36,13 @@ Background research: [`research/market.md`](research/market.md),
    equivalent and the pattern's own definition for special stitches.
 
 7. Before starting, the user can **make a gauge swatch**: the project shows how to make it
-   (size, stitch, hook) and asks what she counted in 10 cm. The app says whether it matches
-   the pattern, within a tolerance chosen in Settings (±3, 5 or 10%, default 5), or to try a
-   bigger or smaller hook (or a thicker or thinner yarn) and swatch again. It never
-   recalculates the pattern or the finished size: the aim is a swatch that matches.
-   Every swatch is kept in the project.
+   (size, stitch, hook) and asks what she counted in 10 cm, or 4 in for patterns in inches.
+   Whether the pattern measures in centimetres or inches is always shown in words; if the
+   pattern doesn't make it clear, she chooses. The app says whether the swatch matches the
+   pattern, within a tolerance chosen in Settings (±3, 5 or 10%, default 5), or to try the
+   next bigger or smaller hook (or a thicker or thinner yarn) and swatch again. Stitches
+   decide; rows alone never change the hook. It never recalculates the pattern or the
+   finished size: the aim is a swatch that matches. The last 50 swatches are kept.
 
 ## Screens
 
@@ -134,7 +136,8 @@ Parts have `make` (how many copies; progress tracked per copy) and an optional
 - Per part copy: ticked units, current position, an optional "where I stopped" note.
 - Open-ended repeats: a row counter (+ optional measurement).
 - Project journal: dated free-text notes.
-- Gauge swatches: hook and counts per swatch; the verdict is worked out when shown.
+- Gauge swatches: hook and counts per swatch, and the chosen unit when the pattern is unclear;
+  the verdict is worked out when shown.
 - Last worked timestamp, status.
 
 ## MVP scope

@@ -71,7 +71,7 @@ export default function Project({ id }) {
 
       <ResumeCard p={p} r={r} total={total} onJump={jump} />
 
-      <GaugeCard key={p.id} p={p} started={total.done > 0} tolerance={S.settings.gaugeTolerance} />
+      <GaugeCard key={`${p.id}|${p.pattern.gauge?.text || ""}`} p={p} started={total.done > 0} tolerance={S.settings.gaugeTolerance} />
 
       <PartTabs p={p} part={part} copy={copy} onSelect={(partId, c) => setSel({ partId, copy: c })} />
 

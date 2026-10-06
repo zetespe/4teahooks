@@ -33,12 +33,18 @@ aliases and reports what it had to skip.
   that size; another size means converting again.
 - `stitches`: the pattern's special stitches and its own definitions. Standard
   stitches come from the app's library (`src/stitches.js`).
-- `gauge`: `text` is the pattern's own wording. `stitches`, `rows`, `over` and
-  `unit` (`cm` or `in`) are filled only when the pattern states them as counts
-  over a square; then the project shows the **Gauge swatch** card, which
-  compares the user's swatch with them and suggests a bigger or smaller hook.
-  `critical: false` when the pattern says gauge doesn't matter. A plain string
-  is still accepted (text only, no swatch check).
+- `gauge`: left out when the pattern gives none. `text` is the pattern's own
+  wording. `stitches` and/or `rows` (or `rounds`), `over` and `unit` (`cm` or
+  `in`, the unit of `over`) are filled only when the pattern states them as
+  counts over a width; then the project shows the **Gauge swatch** card. The
+  card always says whether the gauge is in centimetres or inches; when `unit`
+  is missing and the text doesn't make it clear, the user chooses (stored as
+  the project's `gaugeUnit`). The user counts over 10 cm or 4 in; a gauge
+  stated over another width ("4 sts = 1 in") is compared as a rate. The card
+  only says whether the swatch matches or which hook to try; it never
+  recalculates the pattern. Hook advice comes from stitches whenever the
+  pattern gives them. `critical: false` when the pattern says gauge doesn't
+  matter. A plain string is still accepted (text only, no swatch check).
 - `parts[].make`: how many to make; progress is tracked per copy.
 - `parts[].type`: `piece` (default), `assembly` or `finishing`.
 
@@ -58,5 +64,6 @@ the same pattern again keeps ticks on rows whose ids didn't change.
 
 `{ "type": "4tea-hooks-backup", "version": 1, "exportedAt": "…", "projects": [ … ] }`,
 where each project holds its `pattern`, `progress`, `journal`, `swatches`
-(`{ id, at, hook, stitches, rows }`, newest first) and `status`.
+(`{ id, at, hook, stitches, rows }`, newest first, at most 50), `gaugeUnit` and
+`status`.
 Restoring merges by project id or replaces everything.

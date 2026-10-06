@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { normalizePattern } from "./pattern";
 import { pruneProgress } from "./progress";
-import { DEFAULT_TOLERANCE } from "./gauge";
+import { DEFAULT_TOLERANCE, MAX_SWATCHES } from "./gauge";
 import { toast } from "./ui";
 
 export const KEY = "4teahooks.state";
@@ -50,6 +50,8 @@ function normalizeProjectUnsafe(p) {
       .map((j) => ({ id: String(j.id || uid()), at: j.at || new Date().toISOString(), text: String(j.text) })),
     swatches: normalizeSwatches(p.swatches),
   };
+  // Centimetres or inches, when the user chose it for this pattern's gauge.
+  if (p.gaugeUnit === "cm" || p.gaugeUnit === "in") out.gaugeUnit = p.gaugeUnit;
   if (p.finishedAt) out.finishedAt = p.finishedAt;
   // The version before the last "convert again", so it can be undone.
   if (p.previous && typeof p.previous === "object" && p.previous.pattern) {
@@ -72,7 +74,7 @@ function normalizeSwatches(list) {
       if (n(x.rows)) s.rows = x.rows;
       return s;
     })
-    .slice(0, 50);
+    .slice(0, MAX_SWATCHES);
 }
 
 export function migrate(raw) {
