@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { normalizePattern } from "./pattern";
 import { pruneProgress } from "./progress";
+import { DEFAULT_TOLERANCE } from "./gauge";
 import { toast } from "./ui";
 
 export const KEY = "4teahooks.state";
@@ -15,7 +16,7 @@ export const BACKUP_TYPE = "4tea-hooks-backup";
 export function emptyState() {
   return {
     version: SCHEMA,
-    settings: { keepAwake: true, theme: "system", usageCount: true, usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
+    settings: { keepAwake: true, theme: "system", gaugeTolerance: DEFAULT_TOLERANCE, usageCount: true, usageSent: {}, lastBackupAt: null, changesSinceBackup: 0 },
     projects: [],
   };
 }
@@ -24,7 +25,7 @@ export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function newProject(pattern) {
   const now = new Date().toISOString();
-  return { id: uid(), pattern, status: "active", createdAt: now, updatedAt: now, lastWorkedAt: null, progress: { copies: {}, last: null }, journal: [] };
+  return { id: uid(), pattern, status: "active", createdAt: now, updatedAt: now, lastWorkedAt: null, progress: { copies: {}, last: null }, journal: [], swatches: [] };
 }
 
 // Re-validates a stored or imported project. Patterns are normalised again so
@@ -47,6 +48,7 @@ function normalizeProjectUnsafe(p) {
     journal: (Array.isArray(p.journal) ? p.journal : [])
       .filter((j) => j && j.text)
       .map((j) => ({ id: String(j.id || uid()), at: j.at || new Date().toISOString(), text: String(j.text) })),
+    swatches: normalizeSwatches(p.swatches),
   };
   if (p.finishedAt) out.finishedAt = p.finishedAt;
   // The version before the last "convert again", so it can be undone.
@@ -57,6 +59,20 @@ function normalizeProjectUnsafe(p) {
     } catch (e) { /* drop a broken previous version */ }
   }
   return out;
+}
+
+// Gauge swatches the user measured, newest first.
+function normalizeSwatches(list) {
+  const n = (v) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : null);
+  return (Array.isArray(list) ? list : [])
+    .filter((x) => x && typeof x === "object" && (n(x.stitches) || n(x.rows)))
+    .map((x) => {
+      const s = { id: String(x.id || uid()), at: x.at || new Date().toISOString(), hook: x.hook == null ? "" : String(x.hook) };
+      if (n(x.stitches)) s.stitches = x.stitches;
+      if (n(x.rows)) s.rows = x.rows;
+      return s;
+    })
+    .slice(0, 50);
 }
 
 export function migrate(raw) {

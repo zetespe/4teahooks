@@ -5,6 +5,8 @@
 // accepts common aliases, fills defaults, makes ids unique and collects
 // warnings instead of failing, as long as there is something to crochet.
 
+import { normalizeGauge } from "./gauge";
+
 export const PATTERN_TYPE = "4tea-hooks-pattern";
 export const PATTERN_VERSION = 1;
 
@@ -224,7 +226,7 @@ export function normalizePattern(raw) {
       hook: str(m.hook || m.hooks),
       notions: strList(m.notions || m.other),
     },
-    gauge: str(raw.gauge),
+    gauge: normalizeGauge(raw.gauge),
     notes: strList(raw.notes),
     stitches: (Array.isArray(raw.stitches) ? raw.stitches : [])
       .map((x) => (x && typeof x === "object" ? { code: str(x.code || x.abbr || x.abbreviation).toLowerCase(), name: str(x.name), how: strList(x.how || x.steps || x.definition) } : null))

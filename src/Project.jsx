@@ -5,6 +5,7 @@ import { copyState, editCopy, partProgress, projectProgress, resumePoint } from 
 import { explain } from "./stitches";
 import { useWakeLock } from "./useWakeLock";
 import { StitchSymbol, VideoLink } from "./symbols";
+import GaugeCard from "./Gauge";
 import { Bar, Check, Icon, Sheet, ago, fmtDate, go, toast } from "./ui";
 
 const ACTION_LABEL = {
@@ -69,6 +70,8 @@ export default function Project({ id }) {
       <SourceBar pattern={p.pattern} />
 
       <ResumeCard p={p} r={r} total={total} onJump={jump} />
+
+      <GaugeCard key={p.id} p={p} started={total.done > 0} tolerance={S.settings.gaugeTolerance} />
 
       <PartTabs p={p} part={part} copy={copy} onSelect={(partId, c) => setSel({ partId, copy: c })} />
 
@@ -460,7 +463,7 @@ function AboutPattern({ pattern }) {
       {m.yarns.length > 0 && <><h3>Yarn</h3><ul>{m.yarns.map((y) => <li key={y.id}><b>{y.id}</b> {y.label}</li>)}</ul></>}
       {m.hook && <p><b>Hook:</b> {m.hook}</p>}
       {m.notions.length > 0 && <><h3>You'll also need</h3><ul>{m.notions.map((n, i) => <li key={i}>{n}</li>)}</ul></>}
-      {pattern.gauge && <p><b>Gauge:</b> {pattern.gauge}</p>}
+      {pattern.gauge && <p><b>Gauge:</b> {pattern.gauge.text}</p>}
       {pattern.notes.length > 0 && <><h3>Notes</h3><ul>{pattern.notes.map((n, i) => <li key={i}>{n}</li>)}</ul></>}
       {pattern.stitches.length > 0 && (
         <>

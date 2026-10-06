@@ -4,6 +4,7 @@ import { extractJSON } from "./pattern";
 import { wakeLockSupported } from "./useWakeLock";
 import { toast, fmtDate } from "./ui";
 import { applyTheme } from "./theme";
+import { TOLERANCES, DEFAULT_TOLERANCE } from "./gauge";
 
 const fileName = () => `4teahooks-${new Date().toISOString().slice(0, 10)}.json`;
 
@@ -110,6 +111,16 @@ export default function Settings() {
           </div>
         </div>
         <p className="meta">Auto follows your phone's light or dark mode.</p>
+        <div className="setting">
+          <span id="gauge-label">Gauge swatch matches within</span>
+          <div className="seg" role="group" aria-labelledby="gauge-label">
+            {TOLERANCES.map((v) => {
+              const on = (S.settings.gaugeTolerance || DEFAULT_TOLERANCE) === v;
+              return <button key={v} type="button" className={on ? "on" : ""} aria-pressed={on} onClick={() => set("gaugeTolerance", v)}>±{v}%</button>;
+            })}
+          </div>
+        </div>
+        <p className="meta">With 20 stitches in 10 cm, ±5% is one stitch either way. Use ±3% for things that must fit, like sweaters, and ±10% for blankets, bags and scarves.</p>
         {wakeLockSupported && (
           <label className="switch">
             <input type="checkbox" checked={S.settings.keepAwake !== false} onChange={(e) => set("keepAwake", e.target.checked)} />

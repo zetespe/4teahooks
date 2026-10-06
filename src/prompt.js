@@ -16,7 +16,7 @@ const EXAMPLE = {
     hook: "3 mm",
     notions: ["Safety eyes 8 mm ×2", "Fibre fill", "Stitch marker", "Tapestry needle"],
   },
-  gauge: "Not critical; work tightly so the stuffing doesn't show",
+  gauge: { text: "22 sc and 24 rnds = 10 cm with a 3 mm hook. Not critical, but work tightly so the stuffing doesn't show.", stitches: 22, rows: 24, over: 10, unit: "cm", stitch: "sc", hook: "3 mm", critical: false },
   notes: ["Worked in continuous spiral rounds; don't join."],
   stitches: [
     { code: "inv dec", name: "invisible decrease", how: ["Insert the hook in the front loop of the next 2 stitches", "Yarn over, pull through both front loops", "Yarn over, pull through the 2 loops on the hook"] },
@@ -90,7 +90,8 @@ Answer with exactly one JSON object in the format below, nothing else needed. Ru
    - "note": information or anything that can't be written as rows, such as a chart or diagram: describe it briefly and say it's on the pattern page.
 5. "stitches" at the top: the pattern's special stitches and any abbreviation it defines differently from the standard, with "how" as short steps. Standard stitches (ch, sc, dc…) don't need to be listed.
 6. Give every part and step a short unique "id" (letters, numbers, dashes).
-7. Fill "sourceUrl" with the exact address of the pattern page (the full link I gave you, not the website's home page), "size" with the size I'm making (or "One size"), and list materials, gauge and important notes.
+7. "gauge": "text" is the pattern's gauge exactly as written. Fill "stitches", "rows", "over" and "unit" ("cm" or "in") only with numbers the pattern states, for the size I'm making ("17 dc and 9 rows = 10 x 10 cm" → stitches 17, rows 9, over 10, unit "cm"); don't calculate or guess them. Leave them out when the gauge isn't counted in stitches and rows over a square (e.g. a diameter after Rnd 5, or pattern repeats). "stitch" is the stitch the swatch is worked in, "hook" the hook size. "critical": false if the pattern says gauge isn't important or gives none; otherwise true.
+8. Fill "sourceUrl" with the exact address of the pattern page (the full link I gave you, not the website's home page), "size" with the size I'm making (or "One size"), and list materials and important notes.
 
 Format (an example; use the same field names):
 

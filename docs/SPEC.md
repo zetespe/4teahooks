@@ -35,16 +35,23 @@ Background research: [`research/market.md`](research/market.md),
 6. Any stitch in a row is tappable → **How to do it** toggle with a description, the US/UK
    equivalent and the pattern's own definition for special stitches.
 
+7. Before starting, the user can **make a gauge swatch**: the project shows how to make it
+   (size, stitch, hook) and asks what she counted in 10 cm. The app says whether it matches
+   the pattern, within a tolerance chosen in Settings (±3, 5 or 10%, default 5), or to try a
+   bigger or smaller hook (or a thicker or thinner yarn) and swatch again. It never
+   recalculates the pattern or the finished size: the aim is a swatch that matches.
+   Every swatch is kept in the project.
+
 ## Screens
 
 - **Projects** — list of projects with progress bar, current position, last worked; status
   (in progress / finished / paused).
-- **Project** — source link on top; Resume card; parts with progress; rows to tick;
+- **Project** — source link on top; Resume card; Gauge swatch card (when the pattern gives one); parts with progress; rows to tick;
   per-row note; project journal (dated notes); materials, gauge and pattern notes in a
   collapsible "About this pattern".
 - **New project** — copy prompt, paste answer, preview, save.
 - **Stitches** — the built-in stitch library (US with UK equivalents), searchable.
-- **Backup & settings** — save/restore backup file, usage-count switch, about.
+- **Backup & settings** — save/restore backup file, gauge tolerance, usage-count switch, about.
 
 ## Pattern format (what the chatbot returns)
 
@@ -66,7 +73,8 @@ check the conversion.
     "hook": "3 mm",
     "notions": ["Safety eyes 8 mm ×2", "Fibre fill", "Stitch marker", "Tapestry needle"]
   },
-  "gauge": "Not critical; fabric should be tight so stuffing doesn't show",
+  "gauge": { "text": "17 dc and 9 rows = 10 x 10 cm", "stitches": 17, "rows": 9, "over": 10,
+             "unit": "cm", "stitch": "dc", "hook": "4 mm", "critical": true },
   "notes": ["Worked in continuous spiral rounds — don't join."],
   "stitches": [
     { "code": "inv dec", "name": "invisible decrease",
@@ -126,6 +134,7 @@ Parts have `make` (how many copies; progress tracked per copy) and an optional
 - Per part copy: ticked units, current position, an optional "where I stopped" note.
 - Open-ended repeats: a row counter (+ optional measurement).
 - Project journal: dated free-text notes.
+- Gauge swatches: hook and counts per swatch; the verdict is worked out when shown.
 - Last worked timestamp, status.
 
 ## MVP scope
