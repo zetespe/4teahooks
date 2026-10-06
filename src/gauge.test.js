@@ -175,3 +175,42 @@ describe("swatches in a project", () => {
     expect(normalizeProject(old).pattern.gauge).toEqual({ text: "18 sc = 10 cm", critical: true });
   });
 });
+
+describe("review round 2", () => {
+  it("takes the unit right after the width when it names both", () => {
+    expect(normalizeGauge({ text: "16 sc = 4 in / 10 cm", stitches: 16, over: "4 in / 10 cm" })).toMatchObject({ over: 4, unit: "in" });
+    expect(normalizeGauge({ stitches: 16, over: "10 cm (4 in)" })).toMatchObject({ over: 10, unit: "cm" });
+    expect(normalizeGauge({ stitches: 16, over: "4 in (10 cm)" })).toMatchObject({ over: 4, unit: "in" });
+  });
+
+  it("ignores a stray number before 'in' and asks instead", () => {
+    expect(normalizeGauge({ text: "12 sc = 10, working 2 in each st", stitches: 12, over: 10 }).unit).toBeUndefined();
+  });
+
+  it("asks when the unit field and the text disagree", () => {
+    expect(normalizeGauge({ text: "16 sts and 18 rows = 4 in", stitches: 16, rows: 18, over: 4, unit: "cm" }).unit).toBeUndefined();
+    expect(normalizeGauge({ text: "16 sts and 18 rows = 4 in", stitches: 16, rows: 18, over: 4, unit: "in" }).unit).toBe("in");
+  });
+
+  it("reads curly-quote inches and '10 x 10 cm'", () => {
+    expect(normalizeGauge({ text: "16 sc and 18 rows = 4”", stitches: 16, rows: 18, over: 4 }).unit).toBe("in");
+    expect(normalizeGauge({ text: "17 dc and 9 rows = 10 x 10 cm", stitches: 17, rows: 9, over: 10 }).unit).toBe("cm");
+  });
+
+  it("never guesses a count from several sizes", () => {
+    expect(parseCount("15/16/17")).toBeNull();
+    expect(parseCount("15, 16, 17")).toBeNull();
+    expect(parseCount("15/16")).toBeNull();
+    expect(parseCount("½")).toBe(0.5);
+    expect(parseCount("17¾")).toBe(17.75);
+    expect(parseCount("4,5")).toBe(4.5);
+  });
+
+  it("keeps the unit a swatch was measured in", () => {
+    const p = newProject(normalizePattern(structuredClone(sample)).pattern);
+    p.swatches = [{ id: "s1", at: "2026-01-01T00:00:00Z", hook: "4", stitches: 17, unit: "cm" }, { id: "s2", at: "2026-01-01T00:00:00Z", stitches: 17, unit: "yards" }];
+    const back = normalizeProject(JSON.parse(JSON.stringify(p))).swatches;
+    expect(back[0].unit).toBe("cm");
+    expect(back[1].unit).toBeUndefined();
+  });
+});

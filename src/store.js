@@ -72,6 +72,7 @@ function normalizeSwatches(list) {
       const s = { id: String(x.id || uid()), at: x.at || new Date().toISOString(), hook: x.hook == null ? "" : String(x.hook) };
       if (n(x.stitches)) s.stitches = x.stitches;
       if (n(x.rows)) s.rows = x.rows;
+      if (x.unit === "cm" || x.unit === "in") s.unit = x.unit;
       return s;
     })
     .slice(0, MAX_SWATCHES);

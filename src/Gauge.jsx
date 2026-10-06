@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { patchProject, uid } from "./store";
-import { MAX_SWATCHES, UNITS, canCheck, checkSwatch, gaugeLine, gaugeTarget, parseCount, swatchPlan, textShowsNumbers, verdictLabel, DEFAULT_TOLERANCE } from "./gauge";
+import { MAX_SWATCHES, UNITS, canCheck, checkSwatch, fmtMm, gaugeLine, gaugeTarget, hookMm, parseCount, swatchPlan, textShowsNumbers, verdictLabel, DEFAULT_TOLERANCE } from "./gauge";
 import { fmtDate } from "./ui";
 
 // "Gauge swatch" card: how to make one, what the user counted, and whether
@@ -13,7 +13,9 @@ export default function GaugeCard({ p, started, tolerance = DEFAULT_TOLERANCE })
   const unit = p.gaugeUnit || g?.unit;
   const t = gaugeTarget(g, unit);
   const swatches = p.swatches || [];
-  const check = (s) => checkSwatch(t, s, tolerance);
+  // A swatch measured in the other unit (before the user changed it) isn't compared.
+  const sameUnit = (s) => !s.unit || !t || s.unit === t.unit;
+  const check = (s) => (sameUnit(s) ? checkSwatch(t, s, tolerance) : null);
   const last = swatches[0];
   const lastCheck = last ? check(last) : null;
   const [open, setOpen] = useState(() => !!(canCheck(g) && g.critical && lastCheck?.verdict !== "match" && !started));
@@ -22,9 +24,10 @@ export default function GaugeCard({ p, started, tolerance = DEFAULT_TOLERANCE })
 
   const earlier = lastCheck?.verdict !== "match" ? swatches.slice(1).find((s) => check(s)?.verdict === "match") : null;
   const status = !t ? "Choose centimetres or inches"
+    : last && !sameUnit(last) ? `Last swatch was measured in ${UNITS[last.unit].name}`
     : !lastCheck ? (g.critical ? "Not checked yet" : "Optional for this pattern")
-      : lastCheck.verdict === "match" ? `Matches${last.hook ? ` with ${last.hook}` : ""}`
-        : `Last swatch: ${verdictLabel(lastCheck.verdict, lastCheck.by).toLowerCase()}${earlier ? ` · matched earlier${earlier.hook ? ` with ${earlier.hook}` : ""}` : ""}`;
+      : lastCheck.verdict === "match" ? `Matches${last.hook ? ` with ${showHook(last.hook)}` : ""}`
+        : `Last swatch: ${verdictLabel(lastCheck.verdict, lastCheck.by).toLowerCase()}${earlier ? ` · matched earlier${earlier.hook ? ` with ${showHook(earlier.hook)}` : ""}` : ""}`;
 
   const setUnit = (u) => patchProject(p.id, (d) => { d.gaugeUnit = u; d.updatedAt = new Date().toISOString(); }, { count: false });
 
@@ -46,7 +49,7 @@ export default function GaugeCard({ p, started, tolerance = DEFAULT_TOLERANCE })
       </div>
       <p className="meta">
         {!unit ? "The pattern doesn't make it clear. Check the gauge on the pattern page and choose one: your ruler and the counts below will use it."
-          : p.gaugeUnit && p.gaugeUnit !== g.unit ? `You chose ${UNITS[unit].name}.`
+          : p.gaugeUnit && p.gaugeUnit !== g.unit ? (g.unit ? `The pattern says ${UNITS[g.unit].name}; you chose ${UNITS[unit].name}.` : `You chose ${UNITS[unit].name}.`)
             : `From the pattern. Measure with the ${UNITS[unit].name} side of your ruler.`}
       </p>
 
@@ -63,8 +66,10 @@ export default function GaugeCard({ p, started, tolerance = DEFAULT_TOLERANCE })
               return (
                 <li key={s.id}>
                   <span className="meta">{fmtDate(s.at)}</span>{" "}
-                  {[s.hook, s.stitches && `${s.stitches} sts`, s.rows && `${s.rows} ${t.rowWord}`].filter(Boolean).join(" · ")}
+                  {[s.hook && showHook(s.hook), s.stitches && `${s.stitches} sts`, s.rows && `${s.rows} ${t.rowWord}`].filter(Boolean).join(" · ")}
+                  {" "}in {UNITS[s.unit || t.unit].span} {s.unit || t.unit}
                   {c && <> · <b>{verdictLabel(c.verdict, c.by)}</b></>}
+                  {!sameUnit(s) && <span className="meta"> · not compared: measured in {UNITS[s.unit].name}</span>}
                   {" "}<button type="button" className="link-btn" onClick={() => patchProject(p.id, (d) => { d.swatches = (d.swatches || []).filter((x) => x.id !== s.id); })}>Delete</button>
                 </li>
               );
@@ -75,6 +80,9 @@ export default function GaugeCard({ p, started, tolerance = DEFAULT_TOLERANCE })
     </details>
   );
 }
+
+// The field asks for mm, so a bare "4" is shown as "4 mm".
+const showHook = (h) => (/^\d+(?:[.,]\d+)?$/.test(h.trim()) ? fmtMm(hookMm(h)) : h);
 
 function SwatchSteps({ g, t }) {
   const plan = swatchPlan(t);
@@ -90,7 +98,7 @@ function SwatchSteps({ g, t }) {
         <li>If the pattern says to wash or block the finished piece, do the same to the swatch. Let it lie flat, without stretching it.</li>
         <li>Lay a ruler across the middle, away from the edges, and count {what}. Half stitches count too: write 17.5 or 17½.</li>
       </ol>
-      {t.scaled && <p className="meta">The pattern gives its gauge as {gaugeLine(g)}. Counting over {t.per} is more accurate, so the app compares it as {t.stitches ? `${t.stitches} stitches` : ""}{t.stitches && t.rows ? " and " : ""}{t.rows ? `${t.rows} ${t.rowWord}` : ""} in {t.per}.</p>}
+      {t.scaled && <p className="meta">The pattern gives its gauge as {gaugeLine(g, t.unit)}. Counting over {t.per} is more accurate, so the app compares it as {t.stitches ? `${t.stitches} stitches` : ""}{t.stitches && t.rows ? " and " : ""}{t.rows ? `${t.rows} ${t.rowWord}` : ""} in {t.per}.</p>}
     </>
   );
 }
@@ -101,7 +109,7 @@ function SwatchForm({ p, t, form, setForm }) {
   const ready = t.stitches ? !!counts.stitches : !!counts.rows;
   const save = () => {
     if (!ready) return;
-    const s = { id: uid(), at: new Date().toISOString(), hook: form.hook.trim() };
+    const s = { id: uid(), at: new Date().toISOString(), hook: form.hook.trim(), unit: t.unit };
     if (counts.stitches) s.stitches = counts.stitches;
     if (counts.rows) s.rows = counts.rows;
     patchProject(p.id, (d) => { d.swatches = [s, ...(d.swatches || [])].slice(0, MAX_SWATCHES); d.updatedAt = new Date().toISOString(); });
@@ -138,7 +146,7 @@ function Advice({ c, hook, t, tolerance }) {
   return (
     <div className={"gauge-result " + c.verdict} role="status">
       {c.verdict === "match" && (
-        <p><b>Your swatch matches.</b> {main.mine} {c.by} in {t.per}, the pattern has {main.wanted}. Use {hook ? `the ${hook} hook` : "this hook"} for the project.</p>
+        <p><b>Your swatch matches.</b> {main.mine} {c.by} in {t.per}, the pattern has {main.wanted}. Use {hook ? `the ${showHook(hook)} hook` : "this hook"} for the project.</p>
       )}
       {c.verdict === "more" && (
         <p><b>Your {c.by} are smaller than the pattern's:</b> {main.mine} instead of {main.wanted} in {t.per}, so the piece would come out smaller.

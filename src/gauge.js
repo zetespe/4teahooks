@@ -11,40 +11,56 @@ export const UNITS = { cm: { span: 10, name: "centimetres", short: "cm" }, in: {
 
 const str = (v) => (v == null ? "" : String(v).trim());
 
-// A positive number: 17, "17 sts", "4,5", "17½", "17 1/2". A negative
-// number, a range ("15-17") or several sizes ("15 (16, 17)") give null, so a
-// count is never guessed.
+// A positive number: 17, "17 sts", "4,5", "17½", "17 1/2", "½". A negative
+// number, a range ("15-17") or several sizes ("15 (16, 17)", "15/16/17",
+// "15, 16, 17", "15/16") give null, so a count is never guessed.
+const frac = (a, b) => ([2, 3, 4, 8].includes(b) && a > 0 && a < b ? a / b : null);
 function num(v) {
   if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : null;
-  const t = str(v).replace(/½/g, " 1/2").replace(/¼/g, " 1/4").replace(/¾/g, " 3/4");
-  if (!t || /^[-–−]/.test(t) || /\(/.test(t) || /\d\s*(?:-|–|—|to)\s*\d/.test(t)) return null;
-  const m = t.match(/(\d+(?:[.,]\d+)?)(?:\s+(\d+)\/(\d+))?/);
+  const t = str(v).replace(/(\d)\s*([½¼¾])/g, "$1 $2").replace(/½/g, "1/2").replace(/¼/g, "1/4").replace(/¾/g, "3/4");
+  if (!t || /^[-–−]/.test(t) || /\(/.test(t) || /\d\s*(?:-|–|—|to)\s*\d/.test(t)
+    || /\d\s*,\s+\d/.test(t) || /\d\s*\/\s*\d+\s*\/\s*\d/.test(t)) return null;
+  const m = t.match(/(\d+(?:[.,]\d+)?)(?:\s*\/\s*(\d+)|\s+(\d+)\s*\/\s*(\d+))?/);
   if (!m) return null;
-  let n = parseFloat(m[1].replace(",", "."));
-  if (m[2] && +m[3] > 0) n += +m[2] / +m[3];
+  const whole = parseFloat(m[1].replace(",", "."));
+  if (m[2]) return frac(whole, +m[2]); // "1/2"; "15/16" is two sizes → null
+  let n = whole;
+  if (m[3]) { const f = frac(+m[3], +m[4]); if (f == null) return null; n += f; }
   return n > 0 ? n : null;
 }
 export const parseCount = num;
 const NOT_CRITICAL = /\bnot\s+(critical|important|essential)|doesn'?t\s+matter|isn'?t\s+important|no\s+gauge/i;
 
-const CM = /\d\s*cm\b|\bcm\b|centimet/i;
-const IN = /\d\s*(?:in\b|inch|["″])|\binch(?:es)?\b/i;
+// The width a gauge is counted over: "10 cm", "4 in / 10 cm", "4 in (10 cm)".
+// Only the first measurement counts.
+const overOf = (v) => (typeof v === "number" ? num(v) : num(str(v).split(/[/(]/)[0]));
 
-// "cm" or "in" when the chatbot's answer says so; otherwise undefined and
-// the user is asked. When the text gives both ("10 cm / 4 in"), the width
-// the numbers are counted over decides.
+// The unit written right after the width's number in a string: "= 10 cm",
+// "10 x 10 cm", "4 in.", '4"'. A number elsewhere ("2 in each st") doesn't
+// count.
+const UNIT_WORD = /^(?:\s*(?:x|×)\s*\d+(?:[.,]\d+)?)?\s*(cm\b|centimet|in\b|in\.|inch|["″”])/i;
+function unitAfter(s, over) {
+  const n = String(Math.round(over * 100) / 100).replace(".", "[.,]");
+  const re = new RegExp(`(?<![\\d.,])${n}(?![\\d])`, "g");
+  let m;
+  while ((m = re.exec(s))) {
+    const u = s.slice(m.index + m[0].length).match(UNIT_WORD);
+    if (u) return /^(cm|centimet)/i.test(u[1]) ? "cm" : "in";
+  }
+  return undefined;
+}
+
+// "cm" or "in" when the chatbot's answer says so clearly; otherwise
+// undefined and the user is asked. The unit field, the width and the text
+// must agree: when two of them disagree, the user is asked too.
 function detectUnit(raw, over, text) {
   const u = str(raw.unit).toLowerCase();
-  if (/^(cm|centi)/.test(u)) return "cm";
-  if (/^(in|inch|"|″)/.test(u)) return "in";
-  const o = str(raw.over ?? raw.size ?? raw.width);
-  if (CM.test(o)) return "cm";
-  if (IN.test(o) || /["″]$/.test(o)) return "in";
-  const cm = CM.test(text), inch = IN.test(text);
-  if (cm && !inch) return "cm";
-  if (inch && !cm) return "in";
-  if (cm && inch) return over === 10 ? "cm" : over === 4 ? "in" : undefined;
-  return undefined;
+  const field = /^(cm|centi)/.test(u) ? "cm" : /^(in|inch|"|″|”)/.test(u) ? "in" : undefined;
+  const width = typeof (raw.over ?? raw.size ?? raw.width) === "string" ? unitAfter(str(raw.over ?? raw.size ?? raw.width).split(/[/(]/)[0], over) : undefined;
+  const written = text ? unitAfter(text, over) : undefined;
+  const found = [field, width, written].filter(Boolean);
+  if (!found.length || found.some((x) => x !== found[0])) return undefined;
+  return found[0];
 }
 
 // Accepts the chatbot's object or the plain text older patterns have.
@@ -60,7 +76,7 @@ export function normalizeGauge(raw) {
   const stitches = num(raw.stitches ?? raw.sts);
   const roundsKey = raw.rows == null && (raw.rounds != null || raw.rnds != null);
   const rows = num(raw.rows ?? raw.rounds ?? raw.rnds);
-  const over = num(raw.over ?? raw.size ?? raw.width);
+  const over = overOf(raw.over ?? raw.size ?? raw.width);
   if (over && (stitches || rows)) {
     if (stitches) g.stitches = stitches;
     if (rows) g.rows = rows;

@@ -41,8 +41,9 @@ Background research: [`research/market.md`](research/market.md),
    pattern doesn't make it clear, she chooses. The app says whether the swatch matches the
    pattern, within a tolerance chosen in Settings (±3, 5 or 10%, default 5), or to try the
    next bigger or smaller hook (or a thicker or thinner yarn) and swatch again. Stitches
-   decide; rows alone never change the hook. It never recalculates the pattern or the
-   finished size: the aim is a swatch that matches. The last 50 swatches are kept.
+   decide whenever the pattern gives them; then rows alone never change the hook. It never
+   recalculates the pattern or the finished size: the aim is a swatch that matches. The last
+   50 swatches are kept.
 
 ## Screens
 

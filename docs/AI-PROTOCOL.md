@@ -38,7 +38,7 @@ aliases and reports what it had to skip.
   `in`, the unit of `over`) are filled only when the pattern states them as
   counts over a width; then the project shows the **Gauge swatch** card. The
   card always says whether the gauge is in centimetres or inches; when `unit`
-  is missing and the text doesn't make it clear, the user chooses (stored as
+  is missing, or `unit`, `over` and `text` disagree, the user chooses (stored as
   the project's `gaugeUnit`). The user counts over 10 cm or 4 in; a gauge
   stated over another width ("4 sts = 1 in") is compared as a rate. The card
   only says whether the swatch matches or which hook to try; it never
@@ -64,6 +64,6 @@ the same pattern again keeps ticks on rows whose ids didn't change.
 
 `{ "type": "4tea-hooks-backup", "version": 1, "exportedAt": "…", "projects": [ … ] }`,
 where each project holds its `pattern`, `progress`, `journal`, `swatches`
-(`{ id, at, hook, stitches, rows }`, newest first, at most 50), `gaugeUnit` and
+(`{ id, at, hook, stitches, rows, unit }`, newest first, at most 50), `gaugeUnit` and
 `status`.
 Restoring merges by project id or replaces everything.
