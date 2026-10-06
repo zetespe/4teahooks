@@ -303,6 +303,20 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visib
 .about[open] summary::after { content: " −"; }
 .about h3 { margin-top: 12px; font-size: .95rem; }
 .about ul, .about ol { padding-left: 1.2em; margin: 4px 0; }
+.gauge summary .meta { display: block; }
+.gauge .summary-title { font-size: 1.15rem; font-weight: 700; }
+.about.gauge summary::after, .about.gauge[open] summary::after { content: none; }
+.gauge .summary-title::after { content: " +"; color: var(--muted); }
+.gauge[open] .summary-title::after { content: " −"; }
+.gauge summary .meta.ok { color: var(--accent); font-weight: 700; }
+.gauge-form { display: flex; flex-wrap: wrap; gap: 0 12px; }
+.gauge-form .field { flex: 1 1 120px; min-width: 0; }
+.gauge-form input { width: 100%; }
+.gauge-result { margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--accent-soft); }
+.gauge-result.match { background: var(--done-soft); }
+.gauge-result p { margin: 0 0 6px; }
+.gauge-result p:last-child { margin-bottom: 0; }
+.swatches li { margin: 4px 0; }
 .special { margin: 8px 0; }
 
 .journal textarea { margin-bottom: 8px; }
